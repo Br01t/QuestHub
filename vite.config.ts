@@ -5,24 +5,16 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => ({
-  // 🔹 Base path per GitHub Pages
   base: mode === "production" ? "/feedback-fort/" : "/",
-
   server: {
     host: "::",
     port: 8080,
   },
-
   plugins: [
     react(),
-
-    // Attiva tagging componenti solo in dev
     mode === "development" && componentTagger(),
-
-    // 🔹 Configurazione PWA
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: "auto",
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",
@@ -30,19 +22,16 @@ export default defineConfig(({ mode }) => ({
         "pwa-512x512.png",
         "pwa-512x512-maskable.png",
       ],
-
-      // 🧩 Manifest PWA
       manifest: {
         name: "FeedbackFort",
         short_name: "FeedbackFort",
         description: "Sistema di gestione e analisi questionari",
-        lang: "it",
         theme_color: "#3b82f6",
         background_color: "#ffffff",
         display: "standalone",
-        orientation: "portrait",
         scope: "/feedback-fort/",
         start_url: "/feedback-fort/index.html",
+        orientation: "portrait",
         icons: [
           {
             src: "pwa-192x192.png",
@@ -62,22 +51,8 @@ export default defineConfig(({ mode }) => ({
           },
         ],
       },
-
-      // 🔹 Configurazione del service worker Workbox
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-      },
-
-      // 🔹 Abilita PWA anche in dev (utile per test)
-      devOptions: {
-        enabled: true,
-        type: "module",
-      },
     }),
   ].filter(Boolean),
-
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
