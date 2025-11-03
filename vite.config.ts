@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => ({
-  base: mode === "production" ? "/feedback-fort/" : "/",
+  base: mode === "production" ? "/questHub/" : "/",
   server: {
     host: "::",
     port: 8080,
@@ -23,14 +23,14 @@ export default defineConfig(({ mode }) => ({
         "pwa-512x512-maskable.png",
       ],
       manifest: {
-        name: "FeedbackFort",
-        short_name: "FeedbackFort",
+        name: "QuestHub",
+        short_name: "QuestHub",
         description: "Sistema di gestione e analisi questionari",
         theme_color: "#3b82f6",
         background_color: "#ffffff",
         display: "standalone",
-        scope: "/feedback-fort/",
-        start_url: "/feedback-fort/index.html",
+        scope: "/questHub/",
+        start_url: "/questHub/index.html",
         orientation: "portrait",
         icons: [
           {

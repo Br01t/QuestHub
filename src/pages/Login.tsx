@@ -52,7 +52,7 @@ const Login = () => {
             </div>
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-            FeedbackApp
+            QuestHub
           </CardTitle>
           <CardDescription className="text-base">Sistema di gestione e analisi questionari</CardDescription>
         </CardHeader>

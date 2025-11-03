@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 // 👇 Qui calcoliamo automaticamente il basename corretto
-const base = import.meta.env.MODE === "production" ? "/feedback-fort" : "/";
+const base = import.meta.env.MODE === "production" ? "/questHub" : "/";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

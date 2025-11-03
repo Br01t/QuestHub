@@ -29,6 +29,8 @@ import { db } from "@/lib/firebase";
 import { ArrowLeft, Search, Check, CalendarIcon, X, BarChart3, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 type AnswerValue = string | number | boolean | string[] | null | undefined;
 
@@ -195,6 +197,134 @@ export default function Analysis() {
     return grouped;
   }, [responsesByReparto, selectedReparto]);
 
+  const generatePDF = () => {
+      const doc = new jsPDF();
+      const title =
+        tab === "workers"
+          ? selectedWorker === "all"
+            ? "Analisi per lavoratore (tutti)"
+            : `Analisi per lavoratore: ${selectedWorker}`
+          : selectedReparto === "all"
+          ? "Analisi per reparto (tutti)"
+          : `Analisi per reparto: ${selectedReparto}`;
+
+      // Titolo principale
+      doc.setFontSize(16);
+      doc.text("Report Analisi VDT", 14, 20);
+      doc.setFontSize(12);
+      doc.text(title, 14, 30);
+
+      // Se ci sono filtri data
+      if (dateFrom || dateTo) {
+        doc.setFontSize(10);
+        doc.text(
+          `Periodo: ${dateFrom ? format(dateFrom, "dd/MM/yyyy") : "..."} → ${
+            dateTo ? format(dateTo, "dd/MM/yyyy") : "..."
+          }`,
+          14,
+          38
+        );
+      }
+
+      let y = 45; // punto iniziale
+
+      if (tab === "workers") {
+        // se nessun lavoratore selezionato
+        if (selectedWorker === "all") {
+          doc.text("Seleziona un lavoratore per esportare i dati.", 14, y);
+        } else {
+          responsesByWorker.forEach((resp, i) => {
+            doc.setFontSize(12);
+            doc.text(`${i + 1}. ${resp.answers?.meta_nome || "Sconosciuto"}`, 14, y);
+            y += 6;
+            doc.setFontSize(9);
+            doc.text(
+              `Compilato: ${
+                resp.createdAt?.toDate
+                  ? format(resp.createdAt.toDate(), "dd/MM/yyyy HH:mm")
+                  : "N/D"
+              }`,
+              14,
+              y
+            );
+            y += 4;
+
+            doc.text(
+              `Data creazione report: ${format(new Date(), "dd/MM/yyyy HH:mm")}`,
+              14,
+              y
+            );
+            y += 6;
+
+            // Tabella delle risposte
+            const tableData = FULL_QUESTIONS.map((q) => [
+              q.label,
+              resp.answers?.[q.id] ? String(resp.answers?.[q.id]) : "—",
+            ]);
+
+            autoTable(doc, {
+              startY: y + 2,
+              head: [["Domanda", "Risposta"]],
+              body: tableData,
+              theme: "striped",
+              styles: { fontSize: 8, cellPadding: 2 },
+              columnStyles: { 0: { cellWidth: 110 }, 1: { cellWidth: 70 } },
+            });
+
+      const lastTableY =
+                    ((doc as unknown) as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ??
+                    y;
+                  y = lastTableY + 10;
+                });
+              }
+            } else if (tab === "reparti") {
+              if (selectedReparto === "all") {
+                doc.text("Seleziona un reparto per esportare i dati.", 14, y);
+              } else {
+                FULL_QUESTIONS.forEach((q) => {
+                  const answers = answersGroupedByQuestion[q.id] || [];
+                  if (answers.length === 0) return;
+      
+                  doc.setFontSize(11);
+                  doc.text(q.label, 14, y);
+                  y += 4;
+      
+                  const tableData = answers.map((a) => [
+                    a.lavoratore,
+                    Array.isArray(a.value) ? a.value.join(", ") : String(a.value),
+                  ]);
+      
+                  autoTable(doc, {
+                    startY: y,
+                    head: [["Lavoratore", "Risposta"]],
+                    body: tableData,
+                    theme: "striped",
+                    styles: { fontSize: 8, cellPadding: 2 },
+                    columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 100 } },
+                  });
+      
+                  y = ((doc as unknown) as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+            if (y > 270) doc.addPage(); // nuova pagina se serve
+          });
+        }
+      }
+
+      // Footer
+      doc.setFontSize(8);
+      doc.text(
+        `Generato il ${format(new Date(), "dd/MM/yyyy HH:mm")}`,
+        14,
+        290
+      );
+
+      // Salva il file
+      doc.save(
+        `report_${tab === "workers" ? "lavoratore" : "reparto"}_${new Date()
+          .toISOString()
+          .slice(0, 10)}.pdf`
+      );
+    };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5">
       <header className="border-b bg-card/80 backdrop-blur-md shadow-md sticky top-0 z-50">
@@ -301,6 +431,21 @@ export default function Analysis() {
             <CardDescription>Scegli come visualizzare i dati raccolti</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="default"
+                className="gap-2"
+                onClick={generatePDF}
+                disabled={
+                  (tab === "workers" && selectedWorker === "all") ||
+                  (tab === "reparti" && selectedReparto === "all")
+                }
+              >
+                <BarChart3 className="h-4 w-4" />
+                Esporta PDF
+              </Button>
+            </div>
+
             <Tabs value={tab} onValueChange={(v: "workers" | "reparti") => setTab(v)}>
               <TabsList className="grid grid-cols-2 gap-2 w-full md:w-1/2">
                 <TabsTrigger value="workers">Per Lavoratore</TabsTrigger>
