@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Command,
   CommandEmpty,
@@ -25,7 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { collection, getDocs, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { ArrowLeft, Search, Check } from "lucide-react";
+import { ArrowLeft, Search, Check, CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -104,6 +105,8 @@ export default function Analysis() {
   const [selectedReparto, setSelectedReparto] = useState<string>("all");
   const [openWorker, setOpenWorker] = useState(false);
   const [openReparto, setOpenReparto] = useState(false);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   useEffect(() => {
     if (!user) {
@@ -127,25 +130,46 @@ export default function Analysis() {
     }
   };
 
+  const filteredResponses = useMemo(() => {
+    let filtered = responses;
+    if (dateFrom) {
+      filtered = filtered.filter((r) => {
+        if (!r.createdAt?.toDate) return false;
+        const date = r.createdAt.toDate();
+        return date >= dateFrom;
+      });
+    }
+    if (dateTo) {
+      filtered = filtered.filter((r) => {
+        if (!r.createdAt?.toDate) return false;
+        const date = r.createdAt.toDate();
+        const endOfDay = new Date(dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        return date <= endOfDay;
+      });
+    }
+    return filtered;
+  }, [responses, dateFrom, dateTo]);
+
   const workers = useMemo(
-    () => Array.from(new Set(responses.map((r) => String(r.answers?.meta_nome)).filter((n) => n !== "undefined" && n !== "null"))).sort(),
-    [responses]
+    () => Array.from(new Set(filteredResponses.map((r) => String(r.answers?.meta_nome)).filter((n) => n !== "undefined" && n !== "null"))).sort(),
+    [filteredResponses]
   );
 
   const reparti = useMemo(
-    () => Array.from(new Set(responses.map((r) => r.answers?.meta_reparto).filter(Boolean))).sort(),
-    [responses]
+    () => Array.from(new Set(filteredResponses.map((r) => r.answers?.meta_reparto).filter(Boolean))).sort(),
+    [filteredResponses]
   );
 
   const responsesByWorker = useMemo(() => {
     if (selectedWorker === "all") return [];
-    return responses.filter((r) => r.answers?.meta_nome === selectedWorker);
-  }, [responses, selectedWorker]);
+    return filteredResponses.filter((r) => r.answers?.meta_nome === selectedWorker);
+  }, [filteredResponses, selectedWorker]);
 
   const responsesByReparto = useMemo(() => {
     if (selectedReparto === "all") return [];
-    return responses.filter((r) => r.answers?.meta_reparto === selectedReparto);
-  }, [responses, selectedReparto]);
+    return filteredResponses.filter((r) => r.answers?.meta_reparto === selectedReparto);
+  }, [filteredResponses, selectedReparto]);
 
   const renderAnswer = (val: string | number | boolean | string[] | undefined | null) => {
     if (val === undefined || val === null || val === "") return <span className="text-muted-foreground">—</span>;
@@ -186,6 +210,84 @@ export default function Analysis() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Filtro Date */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Filtri temporali</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Data inizio</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[240px] justify-start text-left font-normal",
+                        !dateFrom && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, "dd/MM/yyyy") : <span>Seleziona data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Data fine</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[240px] justify-start text-left font-normal",
+                        !dateTo && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, "dd/MM/yyyy") : <span>Seleziona data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDateFrom(undefined);
+                    setDateTo(undefined);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Rimuovi filtri
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs value={tab} onValueChange={(v: "workers" | "reparti") => setTab(v)}>
           <TabsList className="grid grid-cols-2 gap-2 w-full md:w-1/2">
             <TabsTrigger value="workers">Per lavoratore</TabsTrigger>
