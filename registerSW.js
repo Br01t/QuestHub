@@ -1,1 +1,1 @@
-if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/feedback-fort/sw.js', { scope: '/feedback-fort/' })})}
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/questHub/sw.js', { scope: '/questHub/' })})}
