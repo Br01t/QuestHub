@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://Br01t.github.io/feedback-fort",
+  "homepage": "https://Br01t.github.io/questHub",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
