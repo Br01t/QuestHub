@@ -1,36 +1,66 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Shield, Building2, MapPin, ArrowLeft, Plus, Trash2, Users as UsersIcon } from 'lucide-react';
-import { Company, CompanySite, UserProfile } from '@/types/user';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  getDoc,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import {
+  Shield,
+  Building2,
+  MapPin,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Users as UsersIcon,
+} from "lucide-react";
+import { Company, CompanySite, UserProfile } from "@/types/user";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 const Admin = () => {
   const { user, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [companies, setCompanies] = useState<Company[]>([]);
   const [sites, setSites] = useState<CompanySite[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
-  
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [newSiteName, setNewSiteName] = useState('');
-  const [newSiteAddress, setNewSiteAddress] = useState('');
-  const [selectedCompanyForSite, setSelectedCompanyForSite] = useState('');
+
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newSiteName, setNewSiteName] = useState("");
+  const [newSiteAddress, setNewSiteAddress] = useState("");
+  const [selectedCompanyForSite, setSelectedCompanyForSite] = useState("");
 
   useEffect(() => {
     if (!user || !isSuperAdmin) {
-      navigate('/dashboard');
+      navigate("/dashboard");
       return;
     }
     loadData();
@@ -39,22 +69,30 @@ const Admin = () => {
   const loadData = async () => {
     try {
       // Load companies
-      const companiesSnap = await getDocs(collection(db, 'companies'));
-      setCompanies(companiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+      const companiesSnap = await getDocs(collection(db, "companies"));
+      setCompanies(
+        companiesSnap.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Company)
+        )
+      );
 
       // Load sites
-      const sitesSnap = await getDocs(collection(db, 'companySites'));
-      setSites(sitesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CompanySite)));
+      const sitesSnap = await getDocs(collection(db, "companySites"));
+      setSites(
+        sitesSnap.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as CompanySite)
+        )
+      );
 
       // Load users
-      const usersSnap = await getDocs(collection(db, 'userProfiles'));
-      setUsers(usersSnap.docs.map(doc => ({ ...doc.data() } as UserProfile)));
+      const usersSnap = await getDocs(collection(db, "userProfiles"));
+      setUsers(usersSnap.docs.map((doc) => ({ ...doc.data() } as UserProfile)));
     } catch (error) {
-      console.error('Errore caricamento dati:', error);
+      console.error("Errore caricamento dati:", error);
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Impossibile caricare i dati',
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile caricare i dati",
       });
     }
   };
@@ -62,184 +100,201 @@ const Admin = () => {
   const createCompany = async () => {
     if (!newCompanyName.trim()) {
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Inserisci il nome dell\'azienda',
+        variant: "destructive",
+        title: "Errore",
+        description: "Inserisci il nome dell'azienda",
       });
       return;
     }
 
     try {
-      await addDoc(collection(db, 'companies'), {
+      await addDoc(collection(db, "companies"), {
         name: newCompanyName,
         createdAt: new Date(),
       });
-      
-      setNewCompanyName('');
+
+      setNewCompanyName("");
       loadData();
       toast({
-        title: 'Azienda creata',
-        description: 'Azienda aggiunta con successo',
+        title: "Azienda creata",
+        description: "Azienda aggiunta con successo",
       });
     } catch (error) {
-      console.error('Errore creazione azienda:', error);
+      console.error("Errore creazione azienda:", error);
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Impossibile creare l\'azienda',
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile creare l'azienda",
       });
     }
   };
 
   const createSite = async () => {
-    if (!newSiteName.trim() || !newSiteAddress.trim() || !selectedCompanyForSite) {
+    if (
+      !newSiteName.trim() ||
+      !newSiteAddress.trim() ||
+      !selectedCompanyForSite
+    ) {
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Compila tutti i campi',
+        variant: "destructive",
+        title: "Errore",
+        description: "Compila tutti i campi",
       });
       return;
     }
 
     try {
-      await addDoc(collection(db, 'companySites'), {
+      await addDoc(collection(db, "companySites"), {
         companyId: selectedCompanyForSite,
         name: newSiteName,
         address: newSiteAddress,
         createdAt: new Date(),
       });
-      
-      setNewSiteName('');
-      setNewSiteAddress('');
-      setSelectedCompanyForSite('');
+
+      setNewSiteName("");
+      setNewSiteAddress("");
+      setSelectedCompanyForSite("");
       loadData();
       toast({
-        title: 'Sede creata',
-        description: 'Sede aggiunta con successo',
+        title: "Sede creata",
+        description: "Sede aggiunta con successo",
       });
     } catch (error) {
-      console.error('Errore creazione sede:', error);
+      console.error("Errore creazione sede:", error);
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Impossibile creare la sede',
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile creare la sede",
       });
     }
   };
 
   const deleteCompany = async (companyId: string) => {
-    if (!confirm('Sei sicuro di voler eliminare questa azienda? Verranno eliminate anche tutte le sue sedi.')) {
+    if (
+      !confirm(
+        "Sei sicuro di voler eliminare questa azienda? Verranno eliminate anche tutte le sue sedi."
+      )
+    ) {
       return;
     }
 
     try {
       // Delete associated sites
-      const sitesQuery = query(collection(db, 'companySites'), where('companyId', '==', companyId));
+      const sitesQuery = query(
+        collection(db, "companySites"),
+        where("companyId", "==", companyId)
+      );
       const sitesSnap = await getDocs(sitesQuery);
-      await Promise.all(sitesSnap.docs.map(doc => deleteDoc(doc.ref)));
+      await Promise.all(sitesSnap.docs.map((doc) => deleteDoc(doc.ref)));
 
       // Delete company
-      await deleteDoc(doc(db, 'companies', companyId));
-      
+      await deleteDoc(doc(db, "companies", companyId));
+
       loadData();
       toast({
-        title: 'Azienda eliminata',
-        description: 'Azienda e sedi associate eliminate',
+        title: "Azienda eliminata",
+        description: "Azienda e sedi associate eliminate",
       });
     } catch (error) {
-      console.error('Errore eliminazione azienda:', error);
+      console.error("Errore eliminazione azienda:", error);
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Impossibile eliminare l\'azienda',
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile eliminare l'azienda",
       });
     }
   };
 
   const deleteSite = async (siteId: string) => {
-    if (!confirm('Sei sicuro di voler eliminare questa sede?')) {
+    if (!confirm("Sei sicuro di voler eliminare questa sede?")) {
       return;
     }
 
     try {
-      await deleteDoc(doc(db, 'companySites', siteId));
+      await deleteDoc(doc(db, "companySites", siteId));
       loadData();
       toast({
-        title: 'Sede eliminata',
-        description: 'Sede eliminata con successo',
+        title: "Sede eliminata",
+        description: "Sede eliminata con successo",
       });
     } catch (error) {
-      console.error('Errore eliminazione sede:', error);
+      console.error("Errore eliminazione sede:", error);
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Impossibile eliminare la sede',
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile eliminare la sede",
       });
     }
   };
 
-  const toggleSuperAdmin = async (userId: string, currentRole: 'user' | 'super_admin') => {
-    const newRole = currentRole === 'super_admin' ? 'user' : 'super_admin';
-    
+  const toggleSuperAdmin = async (
+    userId: string,
+    currentRole: "user" | "super_admin"
+  ) => {
+    const newRole = currentRole === "super_admin" ? "user" : "super_admin";
+
     try {
-      await updateDoc(doc(db, 'userProfiles', userId), {
+      await updateDoc(doc(db, "userProfiles", userId), {
         role: newRole,
       });
-      
+
       loadData();
       toast({
-        title: 'Ruolo aggiornato',
-        description: `Utente ora è ${newRole === 'super_admin' ? 'Super Admin' : 'User'}`,
+        title: "Ruolo aggiornato",
+        description: `Utente ora è ${
+          newRole === "super_admin" ? "Super Admin" : "User"
+        }`,
       });
     } catch (error) {
-      console.error('Errore aggiornamento ruolo:', error);
+      console.error("Errore aggiornamento ruolo:", error);
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Impossibile aggiornare il ruolo',
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile aggiornare il ruolo",
       });
     }
   };
 
   const assignCompanyToUser = async (userId: string, companyId: string) => {
     try {
-      await updateDoc(doc(db, 'userProfiles', userId), {
+      await updateDoc(doc(db, "userProfiles", userId), {
         companyId: companyId || null,
-        siteId: null, // Reset sede quando cambia azienda
+        siteId: null,
+        siteIds: [],
       });
-      
+
       loadData();
       toast({
-        title: 'Azienda assegnata',
-        description: 'Utente associato all\'azienda',
+        title: "Azienda assegnata",
+        description: "Utente associato all'azienda",
       });
     } catch (error) {
-      console.error('Errore assegnazione azienda:', error);
+      console.error("Errore assegnazione azienda:", error);
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Impossibile assegnare l\'azienda',
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile assegnare l'azienda",
       });
     }
   };
 
-  const assignSiteToUser = async (userId: string, siteId: string) => {
+  const assignSitesToUser = async (userId: string, siteIds: string[]) => {
     try {
-      await updateDoc(doc(db, 'userProfiles', userId), {
-        siteId: siteId || null,
+      await updateDoc(doc(db, "userProfiles", userId), {
+        siteIds,
       });
-      
+
       loadData();
       toast({
-        title: 'Sede assegnata',
-        description: 'Utente associato alla sede',
+        title: "Sedi assegnate",
+        description: "Utente associato alle sedi selezionate",
       });
     } catch (error) {
-      console.error('Errore assegnazione sede:', error);
+      console.error("Errore assegnazione sedi:", error);
       toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Impossibile assegnare la sede',
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile assegnare le sedi",
       });
     }
   };
@@ -254,7 +309,11 @@ const Admin = () => {
             </div>
             <h1 className="text-xl font-bold">Gestione Admin</h1>
           </div>
-          <Button variant="outline" onClick={() => navigate('/dashboard')} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/dashboard")}
+            className="gap-2"
+          >
             <ArrowLeft className="h-4 w-4" /> Dashboard
           </Button>
         </div>
@@ -275,7 +334,9 @@ const Admin = () => {
                   <Building2 className="h-5 w-5" />
                   Nuova Azienda
                 </CardTitle>
-                <CardDescription>Crea una nuova azienda nel sistema</CardDescription>
+                <CardDescription>
+                  Crea una nuova azienda nel sistema
+                </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="flex gap-3">
@@ -304,31 +365,51 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="pt-6">
                 {companies.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">Nessuna azienda creata</p>
+                  <p className="text-muted-foreground text-center py-8">
+                    Nessuna azienda creata
+                  </p>
                 ) : (
                   <div className="space-y-3">
-                    {companies.map((company) => (
-                      <div key={company.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/5">
-                        <div className="flex items-center gap-3">
-                          <Building2 className="h-5 w-5 text-primary" />
-                          <div>
-                            <p className="font-semibold">{company.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {sites.filter(s => s.companyId === company.id).length} sedi
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteCompany(company.id)}
-                          className="gap-2"
+                    {companies.map((company) => {
+                      const companySites = sites.filter(
+                        (s) => s.companyId === company.id
+                      );
+                      return (
+                        <div
+                          key={company.id}
+                          className="flex flex-col gap-2 p-4 border rounded-lg hover:bg-accent/5 transition-colors"
                         >
-                          <Trash2 className="h-4 w-4" />
-                          Elimina
-                        </Button>
-                      </div>
-                    ))}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Building2 className="h-5 w-5 text-primary" />
+                              <div>
+                                <p className="font-semibold">{company.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {companySites.length} sedi
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteCompany(company.id)}
+                              className="gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Elimina
+                            </Button>
+                          </div>
+
+                          {companySites.length > 0 && (
+                            <ul className="ml-8 mt-1 list-disc text-sm text-muted-foreground">
+                              {companySites.map((site) => (
+                                <li key={site.id}>{site.name}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -342,13 +423,18 @@ const Admin = () => {
                   <MapPin className="h-5 w-5" />
                   Nuova Sede
                 </CardTitle>
-                <CardDescription>Aggiungi una sede ad un'azienda</CardDescription>
+                <CardDescription>
+                  Aggiungi una sede ad un'azienda
+                </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Azienda</Label>
-                    <Select value={selectedCompanyForSite} onValueChange={setSelectedCompanyForSite}>
+                    <Select
+                      value={selectedCompanyForSite}
+                      onValueChange={setSelectedCompanyForSite}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleziona azienda" />
                       </SelectTrigger>
@@ -395,32 +481,72 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="pt-6">
                 {sites.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">Nessuna sede creata</p>
+                  <p className="text-muted-foreground text-center py-8">
+                    Nessuna sede creata
+                  </p>
                 ) : (
                   <div className="space-y-3">
                     {sites.map((site) => {
-                      const company = companies.find(c => c.id === site.companyId);
+                      const company = companies.find(
+                        (c) => c.id === site.companyId
+                      );
+                      const assignedUsers = users.filter((u) =>
+                        u.siteIds?.includes(site.id)
+                      );
+
                       return (
-                        <div key={site.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/5">
-                          <div className="flex items-center gap-3">
-                            <MapPin className="h-5 w-5 text-primary" />
-                            <div>
-                              <p className="font-semibold">{site.name}</p>
-                              <p className="text-sm text-muted-foreground">{site.address}</p>
-                              <Badge variant="secondary" className="mt-1 text-xs">
-                                {company?.name || 'Azienda non trovata'}
-                              </Badge>
+                        <div
+                          key={site.id}
+                          className="p-4 border rounded-lg hover:bg-accent/5 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <MapPin className="h-5 w-5 text-primary" />
+                              <div>
+                                <p className="font-semibold">{site.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {site.address}
+                                </p>
+                                <Badge
+                                  variant="secondary"
+                                  className="mt-1 text-xs"
+                                >
+                                  {company?.name || "Azienda non trovata"}
+                                </Badge>
+                              </div>
                             </div>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteSite(site.id)}
+                              className="gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Elimina
+                            </Button>
                           </div>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteSite(site.id)}
-                            className="gap-2"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Elimina
-                          </Button>
+                          {assignedUsers.length > 0 ? (
+                            <div className="mt-3 pl-8 border-l-2 border-primary/20">
+                              <p className="text-sm font-medium mb-1 text-muted-foreground">
+                                Utenti assegnati:
+                              </p>
+                              <ul className="space-y-1">
+                                {assignedUsers.map((user) => (
+                                  <li
+                                    key={user.userId}
+                                    className="text-sm flex items-center gap-2"
+                                  >
+                                    <UsersIcon className="h-4 w-4 text-primary" />
+                                    <span>{user.email}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : (
+                            <p className="mt-3 text-xs text-muted-foreground italic pl-8">
+                              Nessun utente assegnato
+                            </p>
+                          )}
                         </div>
                       );
                     })}
@@ -437,67 +563,154 @@ const Admin = () => {
                   <UsersIcon className="h-5 w-5" />
                   Gestione Utenti ({users.length})
                 </CardTitle>
-                <CardDescription>Assegna ruoli e aziende agli utenti</CardDescription>
+                <CardDescription>
+                  Assegna ruoli, aziende e sedi agli utenti
+                </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 {users.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">Nessun utente registrato</p>
+                  <p className="text-muted-foreground text-center py-8">
+                    Nessun utente registrato
+                  </p>
                 ) : (
                   <div className="space-y-3">
                     {users.map((userProfile) => {
-                      const company = companies.find(c => c.id === userProfile.companyId);
-                      const site = sites.find(s => s.id === userProfile.siteId);
-                      const userCompanySites = sites.filter(s => s.companyId === userProfile.companyId);
-                      
+                      const company = companies.find(
+                        (c) => c.id === userProfile.companyId
+                      );
+                      const site = sites.find(
+                        (s) => s.id === userProfile.siteId
+                      );
+                      const userCompanySites = sites.filter(
+                        (s) => s.companyId === userProfile.companyId
+                      );
+
+                      const assignedSites = userProfile.siteIds || [];
+
+                      const toggleSite = (siteId: string) => {
+                        const newSites = assignedSites.includes(siteId)
+                          ? assignedSites.filter((id: string) => id !== siteId)
+                          : [...assignedSites, siteId];
+                        assignSitesToUser(userProfile.userId, newSites);
+                      };
+
                       return (
-                        <div key={userProfile.userId} className="p-4 border rounded-lg space-y-3">
+                        <div
+                          key={userProfile.userId}
+                          className="p-4 border rounded-lg space-y-3"
+                        >
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-semibold">{userProfile.email}</p>
+                              <p className="font-semibold">
+                                {userProfile.email}
+                              </p>
                               <div className="flex gap-2 mt-1 flex-wrap">
-                                <Badge variant={userProfile.role === 'super_admin' ? 'default' : 'secondary'}>
-                                  {userProfile.role === 'super_admin' ? 'Super Admin' : 'User'}
+                                <Badge
+                                  variant={
+                                    userProfile.role === "super_admin"
+                                      ? "default"
+                                      : "secondary"
+                                  }
+                                >
+                                  {userProfile.role === "super_admin"
+                                    ? "Super Admin"
+                                    : "User"}
                                 </Badge>
                                 {company && (
-                                  <Badge variant="outline">{company.name}</Badge>
+                                  <Badge variant="outline">
+                                    {company.name}
+                                  </Badge>
                                 )}
-                                {site && (
-                                  <Badge variant="outline" className="bg-primary/5">
+                                {assignedSites.length > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-primary/5"
+                                  >
                                     <MapPin className="h-3 w-3 mr-1" />
-                                    {site.name}
+                                    {assignedSites.length} sedi assegnate
                                   </Badge>
                                 )}
                               </div>
                             </div>
                             <Button
-                              variant={userProfile.role === 'super_admin' ? 'outline' : 'default'}
+                              variant={
+                                userProfile.role === "super_admin"
+                                  ? "outline"
+                                  : "default"
+                              }
                               size="sm"
-                              onClick={() => toggleSuperAdmin(userProfile.userId, userProfile.role)}
+                              onClick={() =>
+                                toggleSuperAdmin(
+                                  userProfile.userId,
+                                  userProfile.role
+                                )
+                              }
                               className="gap-2"
                             >
                               <Shield className="h-4 w-4" />
-                              {userProfile.role === 'super_admin' ? 'Rimuovi Admin' : 'Rendi Admin'}
+                              {userProfile.role === "super_admin"
+                                ? "Rimuovi Admin"
+                                : "Rendi Admin"}
                             </Button>
                           </div>
+
+                          {/* Assegna Azienda */}
                           <div className="space-y-2">
                             <Label className="text-xs">Assegna Azienda</Label>
                             <Select
-                              value={userProfile.companyId || 'none'}
-                              onValueChange={(value) => assignCompanyToUser(userProfile.userId, value === 'none' ? '' : value)}
+                              value={userProfile.companyId || "none"}
+                              onValueChange={(value) =>
+                                assignCompanyToUser(
+                                  userProfile.userId,
+                                  value === "none" ? "" : value
+                                )
+                              }
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Nessuna azienda" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">Nessuna azienda</SelectItem>
+                                <SelectItem value="none">
+                                  Nessuna azienda
+                                </SelectItem>
                                 {companies.map((company) => (
-                                  <SelectItem key={company.id} value={company.id}>
+                                  <SelectItem
+                                    key={company.id}
+                                    value={company.id}
+                                  >
                                     {company.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
+
+                          {company && userCompanySites.length > 0 && (
+                            <div className="space-y-2">
+                              <Label className="text-xs">Assegna Sedi</Label>
+                              <div className="border rounded-lg p-3 bg-muted/10 space-y-1">
+                                {userCompanySites.map((site) => (
+                                  <div
+                                    key={site.id}
+                                    className="flex items-center space-x-2"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={assignedSites.includes(site.id)}
+                                      onChange={() => toggleSite(site.id)}
+                                      id={`${userProfile.userId}-${site.id}`}
+                                    />
+                                    <Label
+                                      htmlFor={`${userProfile.userId}-${site.id}`}
+                                      className="cursor-pointer text-sm"
+                                    >
+                                      {site.name}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
