@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useNavigate } from "react-router-dom";
 
 type AnswerValue = string | number | boolean | string[] | null | undefined;
 
@@ -107,6 +108,7 @@ export default function WorkerAnalysis({
   userProfile,
   isSuperAdmin,
 }: WorkerAnalysisProps) {
+  const navigate = useNavigate();
   const [selectedWorker, setSelectedWorker] = useState<string>("all");
   const [openWorker, setOpenWorker] = useState(false);
 
@@ -295,9 +297,8 @@ export default function WorkerAnalysis({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Pulsante PDF */}
-      <div className="flex justify-end mb-4">
+    <div>
+      <div className="flex justify-end mb-4 gap-2">
         <Button
           variant="default"
           className="gap-2"
@@ -306,6 +307,15 @@ export default function WorkerAnalysis({
         >
           <BarChart3 className="h-4 w-4" />
           Esporta PDF
+        </Button>
+
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => navigate("/final-report")}
+          disabled={selectedWorker === "all"}
+        >
+          📝 Relazione finale
         </Button>
       </div>
 

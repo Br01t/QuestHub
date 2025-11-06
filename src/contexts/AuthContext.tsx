@@ -30,27 +30,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    setUser(user);
 
-      if (user) {
-        try {
-          const profileRef = doc(db, "userProfiles", user.uid);
-          const profileSnap = await getDoc(profileRef);
-          setUserProfile(profileSnap.exists() ? (profileSnap.data() as UserProfile) : null);
-        } catch (err) {
-          console.error("Errore caricando il profilo utente:", err);
-          setUserProfile(null);
-        }
-      } else {
+    if (user) {
+      try {
+        const profileRef = doc(db, "userProfiles", user.uid);
+        const profileSnap = await getDoc(profileRef);
+        setUserProfile(profileSnap.exists() ? (profileSnap.data() as UserProfile) : null);
+      } catch (err) {
+        console.error("Errore caricando il profilo utente:", err);
         setUserProfile(null);
       }
+    } else {
+      setUserProfile(null);
+    }
 
-      setLoading(false);
-    });
+    setLoading(false);
+  });
 
-    return unsubscribe;
-  }, []);
+  return unsubscribe;
+}, []);
+
+
 
   const login = async (email: string, password: string) => {
     try {
@@ -72,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string) => {
     try {
-      const tempAuth = auth; //
+      const tempAuth = auth;
       const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
 
       await signOut(tempAuth);

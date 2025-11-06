@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +18,7 @@ import Analysis from "./pages/Analysis";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react"; // opzionale per spinner
+import FinalReport from "./pages/FinalReport";
 
 const queryClient = new QueryClient();
 const base = import.meta.env.MODE === "production" ? "/questHub" : "/";
@@ -88,7 +95,7 @@ const AppRoutes = () => (
         </RequireAuth>
       }
     />
-
+    <Route path="/final-report" element={<FinalReport />} />
     {/* Not found */}
     <Route path="*" element={<NotFound />} />
   </Routes>
