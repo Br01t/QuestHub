@@ -546,16 +546,68 @@ const CompileQuestionnaire: React.FC = () => {
   const handleSubmitConfirmed = async () => {
     setSubmitting(true);
     try {
-      const completeAnswers: AnswerMap = {};
-      questions.forEach((q) => {
-        if (answers[q.id] !== undefined && answers[q.id] !== null) {
-          completeAnswers[q.id] = answers[q.id];
-        } else {
-          if (q.type === "checkbox-multi") completeAnswers[q.id] = [];
-          else completeAnswers[q.id] = "";
-        }
-      });
+      // Serializza le risposte in modo sicuro
+      const completeAnswers: Record<
+        string,
+        string | string[] | boolean | null
+      > = {};
 
+      for (const q of questions) {
+        const val = answers[q.id];
+
+        if (val instanceof File) {
+          // Se per errore c'è ancora un File, lo ignoriamo
+          console.warn(`Ignoro File non convertito per la domanda ${q.id}`);
+          completeAnswers[q.id] = null;
+        } else if (
+          typeof val === "object" &&
+          val !== null &&
+          "base64" in (val as any)
+        ) {
+          // nel caso sia un oggetto con proprietà base64
+          completeAnswers[q.id] = (val as any).base64;
+        } else if (Array.isArray(val)) {
+          completeAnswers[q.id] = val.map((v) => String(v));
+        } else if (typeof val === "string" || typeof val === "boolean") {
+          completeAnswers[q.id] = val;
+        } else {
+          completeAnswers[q.id] = val ? String(val) : "";
+        }
+      }
+
+      // Verifica se l'immagine è troppo grande e riducila
+      const foto = completeAnswers["foto_postazione"];
+      if (typeof foto === "string" && foto.startsWith("data:image/")) {
+        if (foto.length > 900_000) {
+          console.warn("Ridimensiono immagine base64 troppo grande");
+          // Piccolo compressore inline per evitare crash
+          const img = new Image();
+          img.src = foto;
+          await new Promise((res) => (img.onload = res));
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d")!;
+          const maxSize = 800;
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxSize) {
+              height *= maxSize / width;
+              width = maxSize;
+            }
+          } else if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          completeAnswers["foto_postazione"] = canvas.toDataURL(
+            "image/jpeg",
+            0.7
+          );
+        }
+      }
+
+      // ✅ Invio su Firestore
       await addDoc(collection(db, "responses"), {
         userId: user?.uid ?? null,
         userEmail: user?.email ?? null,
@@ -576,7 +628,7 @@ const CompileQuestionnaire: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Errore",
-        description: "Errore durante l'invio",
+        description: "Errore durante l'invio. Verifica i dati o riprova.",
       });
     } finally {
       setSubmitting(false);
@@ -698,11 +750,45 @@ const CompileQuestionnaire: React.FC = () => {
                           <Label className="font-semibold">{q.question}</Label>
 
                           {q.type === "text" && (
-                            <Input
-                              value={(answers[q.id] as string) || ""}
-                              onChange={(e) => setValue(q.id, e.target.value)}
-                              className="mt-2"
-                            />
+                            <>
+                              {q.id === "foto_postazione" ? (
+                                <div className="mt-2 space-y-2">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => {
+                                        const base64 = ev.target
+                                          ?.result as string;
+                                        setValue(q.id, base64);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }}
+                                  />
+                                  {answers[q.id] && (
+                                    <div className="mt-3">
+                                      <img
+                                        src={answers[q.id] as string}
+                                        alt="Anteprima foto postazione"
+                                        className="w-48 h-48 object-cover rounded-lg border shadow-sm"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <Input
+                                  value={(answers[q.id] as string) || ""}
+                                  onChange={(e) =>
+                                    setValue(q.id, e.target.value)
+                                  }
+                                  className="mt-2"
+                                />
+                              )}
+                            </>
                           )}
 
                           {q.type === "select" && q.options && (
@@ -839,15 +925,26 @@ const CompileQuestionnaire: React.FC = () => {
                 </h4>
                 <div className="space-y-2">
                   {sections[sectionKey].map((q) => (
-                    <div key={q.id}>
+                    <div key={q.id} className="space-y-1">
                       <p className="font-semibold">
                         {q.id}. {q.question}
                       </p>
-                      <p className="text-muted-foreground text-sm">
-                        {Array.isArray(answers[q.id])
-                          ? (answers[q.id] as string[]).join(", ") || "—"
-                          : answers[q.id] || "—"}
-                      </p>
+
+                      {q.id === "foto_postazione" && answers[q.id] ? (
+                        <div className="mt-2">
+                          <img
+                            src={answers[q.id] as string}
+                            alt="Foto postazione"
+                            className="w-64 h-64 object-cover rounded-lg border shadow-sm"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-sm break-words">
+                          {Array.isArray(answers[q.id])
+                            ? (answers[q.id] as string[]).join(", ") || "—"
+                            : answers[q.id] || "—"}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

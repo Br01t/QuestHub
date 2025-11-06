@@ -70,13 +70,19 @@ const FULL_QUESTIONS: { id: string; label: string }[] = [
   { id: "5_note", label: "5 - Necessità di intervento (note)" },
   { id: "6.1", label: "6.1 Superficie del piano adeguata (SI/NO)" },
   { id: "6.2", label: "6.2 Altezza del piano 70-80cm (SI/NO)" },
-  { id: "6.3", label: "6.3 Dimensioni/disposizione schermo/tastiera/mouse (SI/NO)" },
+  {
+    id: "6.3",
+    label: "6.3 Dimensioni/disposizione schermo/tastiera/mouse (SI/NO)",
+  },
   { id: "6_note", label: "6 - Necessità di intervento (note)" },
   { id: "7.1", label: "7.1 Altezza sedile regolabile" },
   { id: "7.2", label: "7.2 Inclinazione sedile regolabile" },
   { id: "7.3", label: "7.3 Schienale con supporto dorso-lombare" },
   { id: "7.4", label: "7.4 Schienale regolabile in altezza" },
-  { id: "7.5", label: "7.5 Schienale/seduta bordi smussati/materiali appropriati" },
+  {
+    id: "7.5",
+    label: "7.5 Schienale/seduta bordi smussati/materiali appropriati",
+  },
   { id: "7.6", label: "7.6 Presenza di ruote/meccanismo spostamento" },
   { id: "7_note", label: "7 - Necessità di intervento (note)" },
   { id: "8.1", label: "8.1 Monitor orientabile/inclinabile" },
@@ -96,7 +102,11 @@ const FULL_QUESTIONS: { id: string; label: string }[] = [
   { id: "foto_postazione", label: "Foto della postazione (URL/nota)" },
 ];
 
-export default function WorkerAnalysis({ filteredResponses, userProfile, isSuperAdmin }: WorkerAnalysisProps) {
+export default function WorkerAnalysis({
+  filteredResponses,
+  userProfile,
+  isSuperAdmin,
+}: WorkerAnalysisProps) {
   const [selectedWorker, setSelectedWorker] = useState<string>("all");
   const [openWorker, setOpenWorker] = useState(false);
 
@@ -132,7 +142,21 @@ export default function WorkerAnalysis({ filteredResponses, userProfile, isSuper
   const renderAnswer = (val: AnswerValue) => {
     if (val === undefined || val === null || val === "") return "—";
     if (Array.isArray(val)) return val.join(", ");
-    return String(val);
+    const str = String(val);
+
+    if (str.startsWith("data:image/") || str.startsWith("http")) {
+      return (
+        <a href={str} target="_blank" rel="noopener noreferrer">
+          <img
+            src={str}
+            alt="foto postazione"
+            className="w-20 h-20 object-cover rounded-md mx-auto shadow-sm hover:scale-105 transition-transform"
+          />
+        </a>
+      );
+    }
+
+    return str;
   };
 
   const isTextQuestion = (id: string): boolean =>
@@ -140,99 +164,135 @@ export default function WorkerAnalysis({ filteredResponses, userProfile, isSuper
 
   const hasDifferentAnswers = (questionId: string): boolean => {
     if (isTextQuestion(questionId)) return false;
-    const values = responsesByWorker.map((r) => renderAnswer(r.answers?.[questionId]));
+    const values = responsesByWorker.map((r) =>
+      renderAnswer(r.answers?.[questionId])
+    );
     return new Set(values).size > 1;
   };
 
   // 🔹 Esporta PDF strutturato a sezioni
   const generatePDF = () => {
-  if (selectedWorker === "all" || responsesByWorker.length === 0) return;
+    if (selectedWorker === "all" || responsesByWorker.length === 0) return;
 
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const marginLeft = 14;
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+    const marginLeft = 14;
 
-  doc.setFontSize(16);
-  doc.text(`Report questionari: ${selectedWorker}`, marginLeft, 20);
-  doc.setFontSize(11);
-  doc.text(`Date compilazioni: ${dates.join(", ")}`, marginLeft, 28);
+    doc.setFontSize(16);
+    doc.text(`Report questionari: ${selectedWorker}`, marginLeft, 20);
+    doc.setFontSize(11);
+    doc.text(`Date compilazioni: ${dates.join(", ")}`, marginLeft, 28);
 
-  const SECTION_TITLES: Record<string, string> = {
-    meta_nome: "INTESTAZIONE",
-    "1.1": "1) ORGANIZZAZIONE DEL LAVORO",
-    "2.1": "2) MICROCLIMA",
-    "3.1": "3) ILLUMINAZIONE",
-    "4.1": "4) RUMORE",
-    "5.1": "5) AMBIENTE DI LAVORO",
-    "6.1": "6) PIANO DI LAVORO",
-    "7.1": "7) SEDILE DI LAVORO",
-    "8.1": "8) SCHERMO",
-    "9.1": "9) TASTIERA E DISPOSITIVI DI INPUT",
-    "10.1": "10) SOFTWARE",
-  };
+    const SECTION_TITLES: Record<string, string> = {
+      meta_nome: "INTESTAZIONE",
+      "1.1": "1) ORGANIZZAZIONE DEL LAVORO",
+      "2.1": "2) MICROCLIMA",
+      "3.1": "3) ILLUMINAZIONE",
+      "4.1": "4) RUMORE",
+      "5.1": "5) AMBIENTE DI LAVORO",
+      "6.1": "6) PIANO DI LAVORO",
+      "7.1": "7) SEDILE DI LAVORO",
+      "8.1": "8) SCHERMO",
+      "9.1": "9) TASTIERA E DISPOSITIVI DI INPUT",
+      "10.1": "10) SOFTWARE",
+    };
 
-  // 🔹 Ogni riga del body conterrà anche un "questionId" per riferimento
-  type RowCell = string | { content: string; colSpan?: number; styles?: Record<string, unknown> };
-  const body: { row: RowCell[]; questionId?: string; isSectionHeader?: boolean }[] = [];
-  let currentSection = "";
+    // 🔹 Ogni riga del body conterrà anche un "questionId" per riferimento
+    type RowCell =
+      | string
+      | { content: string; colSpan?: number; styles?: Record<string, unknown> };
+    const body: {
+      row: RowCell[];
+      questionId?: string;
+      isSectionHeader?: boolean;
+    }[] = [];
+    let currentSection = "";
 
-  FULL_QUESTIONS.forEach((q) => {
-    const sectionTitle = Object.entries(SECTION_TITLES).find(([id]) => q.id === id)?.[1];
-    if (sectionTitle && sectionTitle !== currentSection) {
-      currentSection = sectionTitle;
-      body.push({
-        row: [
-          {
-            content: sectionTitle,
-            colSpan: responsesByWorker.length + 1,
-            styles: {
-              halign: "left",
-              fillColor: [230, 230, 230],
-              fontStyle: "bold",
+    FULL_QUESTIONS.forEach((q) => {
+      const sectionTitle = Object.entries(SECTION_TITLES).find(
+        ([id]) => q.id === id
+      )?.[1];
+      if (sectionTitle && sectionTitle !== currentSection) {
+        currentSection = sectionTitle;
+        body.push({
+          row: [
+            {
+              content: sectionTitle,
+              colSpan: responsesByWorker.length + 1,
+              styles: {
+                halign: "left",
+                fillColor: [230, 230, 230],
+                fontStyle: "bold",
+              },
             },
-          },
-        ],
-        isSectionHeader: true,
-      });
+          ],
+          isSectionHeader: true,
+        });
+      }
+
+      const answers = responsesByWorker.map((r) =>
+        renderAnswer(r.answers?.[q.id])
+      );
+      body.push({ row: [q.label, ...answers], questionId: q.id });
+    });
+
+    autoTable(doc, {
+      startY: 35,
+      head: [["Domanda", ...dates]],
+      body: body.map((b) => b.row),
+      theme: "striped",
+      styles: { fontSize: 8, cellPadding: 2 },
+      didParseCell: (data) => {
+        const rowMeta = body[data.row.index];
+        if (!rowMeta) return;
+
+        // 🔸 Intestazioni di sezione → grigio chiaro fisso
+        if (rowMeta.isSectionHeader) {
+          data.cell.styles.fillColor = [230, 230, 230];
+          data.cell.styles.fontStyle = "bold";
+          return;
+        }
+
+        // 🔸 Evidenziazione differenze solo per domande reali
+        if (
+          rowMeta.questionId &&
+          hasDifferentAnswers(rowMeta.questionId) &&
+          data.section === "body"
+        ) {
+          data.cell.styles.fillColor = [255, 255, 180];
+        }
+      },
+    });
+
+    // 🔹 Aggiungi eventuale immagine alla fine del PDF
+    const lastY = (doc as any).lastAutoTable.finalY + 10;
+    const lastResponse = responsesByWorker[responsesByWorker.length - 1];
+    const foto = lastResponse?.answers?.["foto_postazione"];
+
+    if (typeof foto === "string" && foto.startsWith("data:image/")) {
+      try {
+        doc.addPage();
+        doc.setFontSize(14);
+        doc.text("Foto della postazione", marginLeft, 20);
+        doc.addImage(foto, "JPEG", marginLeft, 30, 180, 120);
+      } catch (err) {
+        console.warn("Impossibile aggiungere immagine al PDF:", err);
+      }
     }
 
-    const answers = responsesByWorker.map((r) => renderAnswer(r.answers?.[q.id]));
-    body.push({ row: [q.label, ...answers], questionId: q.id });
-  });
-
-  autoTable(doc, {
-    startY: 35,
-    head: [["Domanda", ...dates]],
-    body: body.map((b) => b.row),
-    theme: "striped",
-    styles: { fontSize: 8, cellPadding: 2 },
-    didParseCell: (data) => {
-      const rowMeta = body[data.row.index];
-      if (!rowMeta) return;
-
-      // 🔸 Intestazioni di sezione → grigio chiaro fisso
-      if (rowMeta.isSectionHeader) {
-        data.cell.styles.fillColor = [230, 230, 230];
-        data.cell.styles.fontStyle = "bold";
-        return;
-      }
-
-      // 🔸 Evidenziazione differenze solo per domande reali
-      if (
-        rowMeta.questionId &&
-        hasDifferentAnswers(rowMeta.questionId) &&
-        data.section === "body"
-      ) {
-        data.cell.styles.fillColor = [255, 255, 180];
-      }
-    },
-  });
-
-  doc.setFontSize(8);
-  doc.text(`Generato il ${format(new Date(), "dd/MM/yyyy HH:mm")}`, marginLeft, 290);
-  doc.save(`report_${selectedWorker}_${new Date().toISOString().slice(0, 10)}.pdf`);
-};
-
-
+    doc.setFontSize(8);
+    doc.text(
+      `Generato il ${format(new Date(), "dd/MM/yyyy HH:mm")}`,
+      marginLeft,
+      290
+    );
+    doc.save(
+      `report_${selectedWorker}_${new Date().toISOString().slice(0, 10)}.pdf`
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -279,7 +339,10 @@ export default function WorkerAnalysis({ filteredResponses, userProfile, isSuper
                       }}
                     >
                       <Check
-                        className={cn("mr-2 h-4 w-4", selectedWorker === "all" ? "opacity-100" : "opacity-0")}
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedWorker === "all" ? "opacity-100" : "opacity-0"
+                        )}
                       />
                       Tutti
                     </CommandItem>
@@ -293,7 +356,10 @@ export default function WorkerAnalysis({ filteredResponses, userProfile, isSuper
                         }}
                       >
                         <Check
-                          className={cn("mr-2 h-4 w-4", selectedWorker === w ? "opacity-100" : "opacity-0")}
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedWorker === w ? "opacity-100" : "opacity-0"
+                          )}
                         />
                         {w}
                       </CommandItem>
@@ -317,15 +383,22 @@ export default function WorkerAnalysis({ filteredResponses, userProfile, isSuper
         <Card className="shadow-lg border-2">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b">
             <CardTitle>{selectedWorker}</CardTitle>
-            <CardDescription>Confronto questionari: {dates.join(", ")}</CardDescription>
+            <CardDescription>
+              Confronto questionari: {dates.join(", ")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-6 overflow-x-auto">
             <table className="min-w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-accent/30 border-b">
-                  <th className="text-left p-2 border-r font-semibold w-1/3">Domanda</th>
+                  <th className="text-left p-2 border-r font-semibold w-1/3">
+                    Domanda
+                  </th>
                   {dates.map((d) => (
-                    <th key={d} className="text-center p-2 border-r font-semibold">
+                    <th
+                      key={d}
+                      className="text-center p-2 border-r font-semibold"
+                    >
                       {d}
                     </th>
                   ))}
@@ -351,7 +424,9 @@ export default function WorkerAnalysis({ filteredResponses, userProfile, isSuper
                   const rows: JSX.Element[] = [];
 
                   FULL_QUESTIONS.forEach((q) => {
-                    const sectionTitle = Object.entries(SECTION_TITLES).find(([id]) => q.id === id)?.[1];
+                    const sectionTitle = Object.entries(SECTION_TITLES).find(
+                      ([id]) => q.id === id
+                    )?.[1];
                     if (sectionTitle && sectionTitle !== currentSection) {
                       currentSection = sectionTitle;
                       rows.push(
@@ -378,9 +453,14 @@ export default function WorkerAnalysis({ filteredResponses, userProfile, isSuper
                           changed ? "bg-yellow-100/70" : ""
                         )}
                       >
-                        <td className="p-2 border-r align-top font-medium">{q.label}</td>
+                        <td className="p-2 border-r align-top font-medium">
+                          {q.label}
+                        </td>
                         {responsesByWorker.map((resp) => (
-                          <td key={resp.id + q.id} className="p-2 text-center border-r align-top">
+                          <td
+                            key={resp.id + q.id}
+                            className="p-2 text-center border-r align-top"
+                          >
                             {renderAnswer(resp.answers?.[q.id])}
                           </td>
                         ))}

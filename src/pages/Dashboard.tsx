@@ -148,7 +148,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState<string>("");
 
-  // Stati per selezione azienda e sede
   const [availableCompanies, setAvailableCompanies] = useState<Company[]>([]);
   const [availableSites, setAvailableSites] = useState<CompanySite[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
@@ -174,7 +173,6 @@ const Dashboard = () => {
 
   const loadAvailableCompaniesAndSites = async () => {
     try {
-      // Carica tutte le aziende se super admin, altrimenti solo quella assegnata
       const companiesSnapshot = await getDocs(
         query(collection(db, "companies"))
       );
@@ -183,20 +181,33 @@ const Dashboard = () => {
         ...doc.data(),
       })) as Company[];
 
-      if (!isSuperAdmin && userProfile?.companyId) {
-        companies = companies.filter((c) => c.id === userProfile.companyId);
+      if (!isSuperAdmin) {
+        // supporta sia userProfile.companyIds (array) sia companyId (string) per retrocompatibilità
+        const allowedCompanyIds: string[] =
+          (userProfile && (userProfile as any).companyIds) ??
+          (userProfile && userProfile.companyId ? [userProfile.companyId] : []);
+
+        if (allowedCompanyIds.length > 0) {
+          companies = companies.filter((c) => allowedCompanyIds.includes(c.id));
+        } else {
+          // nessuna azienda assegnata: mostra vuoto
+          companies = [];
+        }
       }
 
       setAvailableCompanies(companies);
 
-      // Imposta azienda di default
+      // Imposta azienda di default: se l'utente ha aziende assegnate scegli la prima (o quella esplicitamente in userProfile.companyId)
       if (companies.length > 0) {
+        // preferisci userProfile.companyId se presente, altrimenti la prima disponibile
         const defaultCompany =
-          userProfile?.companyId &&
+          (userProfile?.companyId &&
           companies.find((c) => c.id === userProfile.companyId)
             ? userProfile.companyId
-            : companies[0].id;
+            : companies[0].id) || companies[0].id;
         setSelectedCompanyId(defaultCompany);
+      } else {
+        setSelectedCompanyId("");
       }
     } catch (error) {
       console.error("Errore caricamento aziende:", error);
@@ -213,18 +224,25 @@ const Dashboard = () => {
         ...doc.data(),
       })) as CompanySite[];
 
-      // 🔹 Filtra le sedi solo per l’azienda selezionata
       sites = sites.filter((s) => s.companyId === companyId);
 
-      // 🔹 Imposta comunque le sedi trovate (anche se è una sola)
+      if (!isSuperAdmin) {
+        const allowedSiteIds: string[] =
+          (userProfile && (userProfile as any).siteIds) ??
+          (userProfile && userProfile.siteId ? [userProfile.siteId] : []);
+
+        if (allowedSiteIds.length > 0) {
+          sites = sites.filter((s) => allowedSiteIds.includes(s.id));
+        }
+      }
+
       setAvailableSites(sites);
 
-      // 🔹 Imposta sede selezionata di default
       if (sites.length > 0) {
         const defaultSite =
-          userProfile?.siteId && sites.find((s) => s.id === userProfile.siteId)
+          (userProfile?.siteId && sites.find((s) => s.id === userProfile.siteId)
             ? userProfile.siteId
-            : sites[0].id;
+            : sites[0].id) || sites[0].id;
         setSelectedSiteId(defaultSite);
       } else {
         setSelectedSiteId("");

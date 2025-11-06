@@ -1,9 +1,15 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
-import { useToast } from '@/hooks/use-toast';
-import { UserRole, UserProfile } from '@/types/user';
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  User,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { UserRole, UserProfile } from "@/types/user";
 
 interface AuthContextType {
   user: User | null;
@@ -26,21 +32,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      
+
       if (user) {
-        // Carica il profilo utente da Firestore
-        const profileRef = doc(db, 'userProfiles', user.uid);
-        const profileSnap = await getDoc(profileRef);
-        
-        if (profileSnap.exists()) {
-          setUserProfile(profileSnap.data() as UserProfile);
-        } else {
+        try {
+          const profileRef = doc(db, "userProfiles", user.uid);
+          const profileSnap = await getDoc(profileRef);
+          setUserProfile(profileSnap.exists() ? (profileSnap.data() as UserProfile) : null);
+        } catch (err) {
+          console.error("Errore caricando il profilo utente:", err);
           setUserProfile(null);
         }
       } else {
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -64,24 +69,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+
   const signup = async (email: string, password: string) => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Crea il profilo utente con ruolo 'user' di default
+      const tempAuth = auth; //
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+
+      await signOut(tempAuth);
+
       const userProfileData: UserProfile = {
         userId: userCredential.user.uid,
         email: userCredential.user.email || email,
-        role: 'user',
+        role: "user" as UserRole,
         createdAt: new Date(),
       };
-      
-      await setDoc(doc(db, 'userProfiles', userCredential.user.uid), userProfileData);
-      
+      await setDoc(doc(db, "userProfiles", userCredential.user.uid), userProfileData);
+
       toast({
-        title: "Registrazione completata",
-        description: "Account creato con successo!",
+        title: "Utente creato",
+        description: "Account creato con successo (resti loggato come admin).",
       });
+
+      await signInWithEmailAndPassword(auth, user?.email || "", "");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -109,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isSuperAdmin = userProfile?.role === 'super_admin';
+  const isSuperAdmin = userProfile?.role === "super_admin";
 
   return (
     <AuthContext.Provider value={{ user, userProfile, loading, isSuperAdmin, login, signup, logout }}>
@@ -120,8 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }

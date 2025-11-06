@@ -6,10 +6,13 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => ({
   base: mode === "production" ? "/questHub/" : "/",
+  appType: "spa",
+
   server: {
     host: "::",
     port: 8080,
   },
+
   plugins: [
     react(),
     mode === "development" && componentTagger(),
@@ -32,6 +35,7 @@ export default defineConfig(({ mode }) => ({
         scope: "/questHub/",
         start_url: "/questHub/",
         orientation: "portrait",
+        "handle_links": "preferred",
         icons: [
           {
             src: "pwa-192x192.png",
@@ -53,6 +57,7 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
