@@ -312,7 +312,14 @@ export default function WorkerAnalysis({
         <Button
           variant="outline"
           className="gap-2"
-          onClick={() => navigate("/final-report")}
+          onClick={() =>
+            navigate("/final-report", {
+              state: {
+                filteredResponses: responsesByWorker,
+                selectedWorker,
+              },
+            })
+          }
           disabled={selectedWorker === "all"}
         >
           📝 Relazione finale
@@ -402,13 +409,13 @@ export default function WorkerAnalysis({
               <thead>
                 <tr className="bg-accent/30 border-b">
                   <th className="text-left p-2 border-r font-semibold w-1/3">
-                    Domanda
+                    Domande
                   </th>
                   {dates.map((d) => (
                     <th
                       key={d}
                       className="text-center p-2 border-r font-semibold"
-                    >
+                    >Data: 
                       {d}
                     </th>
                   ))}
