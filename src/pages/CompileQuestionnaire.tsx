@@ -402,9 +402,33 @@ const CompileQuestionnaire: React.FC = () => {
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [loadingData, setLoadingData] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
+  console.log("🔄 [CompileQuestionnaire] useEffect attivato con userProfile:", userProfile);
+
+  const savedData = localStorage.getItem("selectedCompanyData");
+
+  if (savedData) {
+    console.log("💾 [CompileQuestionnaire] Dati trovati in localStorage:", savedData);
+
+    try {
+      const parsed = JSON.parse(savedData);
+      const { companyId, companyName, siteId, siteName } = parsed;
+      setSelectedCompanyId(companyId);
+      setSelectedSiteId(siteId);
+      setCompanyName(companyName?.name || companyName || "N/D");
+      setSiteName(siteName?.name || siteName || "N/D");
+      setShowSelectDialog(false);
+    } catch (err) {
+      console.error("❌ [CompileQuestionnaire] Errore nel parsing di selectedCompanyData:", err);
+      checkAndLoadCompanyData();
+    }
+  } else {
+    console.warn("⚠️ [CompileQuestionnaire] Nessun dato in localStorage, uso fallback.");
     checkAndLoadCompanyData();
-  }, [userProfile]);
+  }
+}, [userProfile]);
+
+
 
   const checkAndLoadCompanyData = async () => {
     if (userProfile?.companyId && userProfile?.siteIds?.length === 1) {
@@ -622,6 +646,7 @@ const CompileQuestionnaire: React.FC = () => {
         title: "Questionario inviato!",
         description: "Grazie per aver completato la checklist",
       });
+      localStorage.removeItem("selectedCompanyData");
       navigate("/dashboard");
     } catch (err) {
       console.error("submit err", err);

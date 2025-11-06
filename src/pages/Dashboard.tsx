@@ -171,6 +171,35 @@ const Dashboard = () => {
     }
   }, [selectedCompanyId]);
 
+  useEffect(() => {
+    if (
+      selectedCompanyId &&
+      selectedSiteId &&
+      availableCompanies.length &&
+      availableSites.length
+    ) {
+      const selectedCompany = availableCompanies.find(
+        (c) => c.id === selectedCompanyId
+      );
+      const selectedSite = availableSites.find((s) => s.id === selectedSiteId);
+
+      const dataToSave = {
+        companyId: selectedCompanyId,
+        companyName: selectedCompany?.name || "Sconosciuta",
+        siteId: selectedSiteId,
+        siteName: selectedSite?.name || "Sconosciuta",
+      };
+      localStorage.setItem("selectedCompanyData", JSON.stringify(dataToSave));
+    } else {
+      console.log("⚠️ [Dashboard] Dati non ancora pronti per il salvataggio", {
+        selectedCompanyId,
+        selectedSiteId,
+        availableCompanies,
+        availableSites,
+      });
+    }
+  }, [selectedCompanyId, selectedSiteId, availableCompanies, availableSites]);
+
   const loadAvailableCompaniesAndSites = async () => {
     try {
       const companiesSnapshot = await getDocs(
