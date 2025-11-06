@@ -52,6 +52,16 @@ const Admin = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [sites, setSites] = useState<CompanySite[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [userAssignments, setUserAssignments] = useState<
+    Record<
+      string,
+      {
+        companies: string[];
+        sites: string[];
+        pending: boolean;
+      }
+    >
+  >({});
 
   const [newCompanyName, setNewCompanyName] = useState("");
   const [newSiteName, setNewSiteName] = useState("");
@@ -588,6 +598,7 @@ const Admin = () => {
                   Assegna ruoli, aziende e sedi agli utenti
                 </CardDescription>
               </CardHeader>
+
               <CardContent className="pt-6">
                 {users.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
@@ -596,29 +607,81 @@ const Admin = () => {
                 ) : (
                   <div className="space-y-3">
                     {users.map((userProfile) => {
-                      const company = companies.find(
-                        (c) => c.id === userProfile.companyId
-                      );
-                      const site = sites.find(
-                        (s) => s.id === userProfile.siteId
-                      );
-                      const userCompanySites = sites.filter(
-                        (s) => s.companyId === userProfile.companyId
-                      );
+                      const userState = userAssignments[userProfile.userId] || {
+                        companies: userProfile.companyIds || [],
+                        sites: userProfile.siteIds || [],
+                        pending: false,
+                      };
 
-                      const assignedSites = userProfile.siteIds || [];
+                      const toggleCompany = (companyId: string) => {
+                        const updatedCompanies = userState.companies.includes(
+                          companyId
+                        )
+                          ? userState.companies.filter((id) => id !== companyId)
+                          : [...userState.companies, companyId];
+
+                        setUserAssignments((prev) => ({
+                          ...prev,
+                          [userProfile.userId]: {
+                            ...userState,
+                            companies: updatedCompanies,
+                            pending: true,
+                          },
+                        }));
+                      };
 
                       const toggleSite = (siteId: string) => {
-                        const newSites = assignedSites.includes(siteId)
-                          ? assignedSites.filter((id: string) => id !== siteId)
-                          : [...assignedSites, siteId];
-                        assignSitesToUser(userProfile.userId, newSites);
+                        const updatedSites = userState.sites.includes(siteId)
+                          ? userState.sites.filter((id) => id !== siteId)
+                          : [...userState.sites, siteId];
+
+                        setUserAssignments((prev) => ({
+                          ...prev,
+                          [userProfile.userId]: {
+                            ...userState,
+                            sites: updatedSites,
+                            pending: true,
+                          },
+                        }));
+                      };
+
+                      const confirmAssignments = async () => {
+                        try {
+                          await updateDoc(
+                            doc(db, "userProfiles", userProfile.userId),
+                            {
+                              companyIds: userState.companies,
+                              siteIds: userState.sites,
+                            }
+                          );
+
+                          toast({
+                            title: "Assegnazioni aggiornate",
+                            description: "Aziende e sedi salvate correttamente",
+                          });
+
+                          setUserAssignments((prev) => ({
+                            ...prev,
+                            [userProfile.userId]: {
+                              ...userState,
+                              pending: false,
+                            },
+                          }));
+                          loadData();
+                        } catch (error) {
+                          console.error("Errore conferma assegnazioni:", error);
+                          toast({
+                            variant: "destructive",
+                            title: "Errore",
+                            description: "Impossibile salvare le assegnazioni",
+                          });
+                        }
                       };
 
                       return (
                         <div
                           key={userProfile.userId}
-                          className="p-4 border rounded-lg space-y-3"
+                          className="p-4 border rounded-lg space-y-4"
                         >
                           <div className="flex items-start justify-between">
                             <div>
@@ -637,24 +700,27 @@ const Admin = () => {
                                     ? "Super Admin"
                                     : "User"}
                                 </Badge>
-                                {company && (
-                                  <Badge variant="outline">
-                                    {company.name}
+                                {userState.companies.length > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-primary/5"
+                                  >
+                                    <Building2 className="h-3 w-3 mr-1" />
+                                    {userState.companies.length} aziende
                                   </Badge>
                                 )}
-                                {assignedSites.length > 0 && (
+                                {userState.sites.length > 0 && (
                                   <Badge
                                     variant="outline"
                                     className="bg-primary/5"
                                   >
                                     <MapPin className="h-3 w-3 mr-1" />
-                                    {assignedSites.length} sedi assegnate
+                                    {userState.sites.length} sedi
                                   </Badge>
                                 )}
                               </div>
                             </div>
 
-                            {/* Pulsanti a destra, uno sopra l’altro */}
                             <div className="flex flex-col items-end gap-2">
                               <Button
                                 variant={
@@ -694,61 +760,98 @@ const Admin = () => {
                             </div>
                           </div>
 
-                          {/* Assegna Azienda */}
+                          {/* Aziende */}
                           <div className="space-y-2">
-                            <Label className="text-xs">Assegna Azienda</Label>
-                            <Select
-                              value={userProfile.companyId || "none"}
-                              onValueChange={(value) =>
-                                assignCompanyToUser(
-                                  userProfile.userId,
-                                  value === "none" ? "" : value
-                                )
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Nessuna azienda" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">
-                                  Nessuna azienda
-                                </SelectItem>
-                                {companies.map((company) => (
-                                  <SelectItem
-                                    key={company.id}
-                                    value={company.id}
+                            <Label className="text-xs">Assegna Aziende</Label>
+                            <div className="border rounded-lg p-3 bg-muted/10 space-y-1">
+                              {companies.map((company) => (
+                                <div
+                                  key={company.id}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={userState.companies.includes(
+                                      company.id
+                                    )}
+                                    onChange={() => toggleCompany(company.id)}
+                                    id={`${userProfile.userId}-${company.id}`}
+                                  />
+                                  <Label
+                                    htmlFor={`${userProfile.userId}-${company.id}`}
+                                    className="cursor-pointer text-sm"
                                   >
                                     {company.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
                           </div>
 
-                          {company && userCompanySites.length > 0 && (
-                            <div className="space-y-2">
-                              <Label className="text-xs">Assegna Sedi</Label>
-                              <div className="border rounded-lg p-3 bg-muted/10 space-y-1">
-                                {userCompanySites.map((site) => (
-                                  <div
-                                    key={site.id}
-                                    className="flex items-center space-x-2"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={assignedSites.includes(site.id)}
-                                      onChange={() => toggleSite(site.id)}
-                                      id={`${userProfile.userId}-${site.id}`}
-                                    />
-                                    <Label
-                                      htmlFor={`${userProfile.userId}-${site.id}`}
-                                      className="cursor-pointer text-sm"
-                                    >
-                                      {site.name}
-                                    </Label>
-                                  </div>
-                                ))}
+                          {/* Sedi raggruppate per azienda */}
+                          {userState.companies.map((companyId) => {
+                            const company = companies.find(
+                              (c) => c.id === companyId
+                            );
+                            const relatedSites = sites.filter(
+                              (s) => s.companyId === companyId
+                            );
+
+                            if (!company) return null;
+
+                            return (
+                              <div key={companyId} className="space-y-2">
+                                <Label className="text-xs">
+                                  Sedi di{" "}
+                                  <span className="font-medium">
+                                    {company.name}
+                                  </span>
+                                </Label>
+                                <div className="border rounded-lg p-3 bg-muted/10 space-y-1">
+                                  {relatedSites.length > 0 ? (
+                                    relatedSites.map((site) => (
+                                      <div
+                                        key={site.id}
+                                        className="flex items-center space-x-2"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={userState.sites.includes(
+                                            site.id
+                                          )}
+                                          onChange={() => toggleSite(site.id)}
+                                          id={`${userProfile.userId}-${site.id}`}
+                                        />
+                                        <Label
+                                          htmlFor={`${userProfile.userId}-${site.id}`}
+                                          className="cursor-pointer text-sm"
+                                        >
+                                          {site.name} –{" "}
+                                          <span className="text-xs text-muted-foreground">
+                                            {site.address}
+                                          </span>
+                                        </Label>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground italic">
+                                      Nessuna sede per questa azienda
+                                    </p>
+                                  )}
+                                </div>
                               </div>
+                            );
+                          })}
+
+                          {userState.pending && (
+                            <div className="pt-3 flex justify-end">
+                              <Button
+                                size="sm"
+                                className="gap-2"
+                                onClick={confirmAssignments}
+                              >
+                                Conferma Assegnazioni
+                              </Button>
                             </div>
                           )}
                         </div>

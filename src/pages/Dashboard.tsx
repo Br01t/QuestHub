@@ -33,7 +33,19 @@ import {
 } from "recharts";
 import { collection, query, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { ClipboardList, FileText, LogOut, Users, PenSquare, BarChart3, Shield, Building2, MapPin, ChevronDown, Check } from "lucide-react";
+import {
+  ClipboardList,
+  FileText,
+  LogOut,
+  Users,
+  PenSquare,
+  BarChart3,
+  Shield,
+  Building2,
+  MapPin,
+  ChevronDown,
+  Check,
+} from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -88,13 +100,19 @@ const FULL_QUESTIONS: { id: string; label: string }[] = [
   { id: "5_note", label: "5 - Necessità di intervento (note)" },
   { id: "6.1", label: "6.1 Superficie del piano adeguata (SI/NO)" },
   { id: "6.2", label: "6.2 Altezza del piano 70-80cm (SI/NO)" },
-  { id: "6.3", label: "6.3 Dimensioni/disposizione schermo/tastiera/mouse (SI/NO)" },
+  {
+    id: "6.3",
+    label: "6.3 Dimensioni/disposizione schermo/tastiera/mouse (SI/NO)",
+  },
   { id: "6_note", label: "6 - Necessità di intervento (note)" },
   { id: "7.1", label: "7.1 Altezza sedile regolabile" },
   { id: "7.2", label: "7.2 Inclinazione sedile regolabile" },
   { id: "7.3", label: "7.3 Schienale con supporto dorso-lombare" },
   { id: "7.4", label: "7.4 Schienale regolabile in altezza" },
-  { id: "7.5", label: "7.5 Schienale/seduta bordi smussati/materiali appropriati" },
+  {
+    id: "7.5",
+    label: "7.5 Schienale/seduta bordi smussati/materiali appropriati",
+  },
   { id: "7.6", label: "7.6 Presenza di ruote/meccanismo spostamento" },
   { id: "7_note", label: "7 - Necessità di intervento (note)" },
   { id: "8.1", label: "8.1 Monitor orientabile/inclinabile" },
@@ -128,13 +146,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [responses, setResponses] = useState<Response[]>([]);
   const [loading, setLoading] = useState(true);
-  const [companyName, setCompanyName] = useState<string>('');
-  
+  const [companyName, setCompanyName] = useState<string>("");
+
   // Stati per selezione azienda e sede
   const [availableCompanies, setAvailableCompanies] = useState<Company[]>([]);
   const [availableSites, setAvailableSites] = useState<CompanySite[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
-  const [selectedSiteId, setSelectedSiteId] = useState<string>('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [openCompany, setOpenCompany] = useState(false);
   const [openSite, setOpenSite] = useState(false);
 
@@ -146,7 +164,7 @@ const Dashboard = () => {
     loadAvailableCompaniesAndSites();
     loadResponses();
   }, [user, navigate]);
-  
+
   useEffect(() => {
     if (selectedCompanyId) {
       loadAvailableSitesForCompany(selectedCompanyId);
@@ -157,70 +175,73 @@ const Dashboard = () => {
   const loadAvailableCompaniesAndSites = async () => {
     try {
       // Carica tutte le aziende se super admin, altrimenti solo quella assegnata
-      const companiesSnapshot = await getDocs(query(collection(db, 'companies')));
-      let companies = companiesSnapshot.docs.map(doc => ({
+      const companiesSnapshot = await getDocs(
+        query(collection(db, "companies"))
+      );
+      let companies = companiesSnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as Company[];
-      
+
       if (!isSuperAdmin && userProfile?.companyId) {
-        companies = companies.filter(c => c.id === userProfile.companyId);
+        companies = companies.filter((c) => c.id === userProfile.companyId);
       }
-      
+
       setAvailableCompanies(companies);
-      
+
       // Imposta azienda di default
       if (companies.length > 0) {
-        const defaultCompany = userProfile?.companyId && companies.find(c => c.id === userProfile.companyId)
-          ? userProfile.companyId
-          : companies[0].id;
+        const defaultCompany =
+          userProfile?.companyId &&
+          companies.find((c) => c.id === userProfile.companyId)
+            ? userProfile.companyId
+            : companies[0].id;
         setSelectedCompanyId(defaultCompany);
       }
     } catch (error) {
-      console.error('Errore caricamento aziende:', error);
+      console.error("Errore caricamento aziende:", error);
     }
   };
-  
+
   const loadAvailableSitesForCompany = async (companyId: string) => {
     try {
-      const sitesSnapshot = await getDocs(query(collection(db, 'companySites')));
-      let sites = sitesSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() })) as CompanySite[];
-      
-      // Filtra per azienda selezionata
-      sites = sites.filter(s => s.companyId === companyId);
-      
-      // Se non è super admin, filtra anche per sedi assegnate
-      if (!isSuperAdmin && userProfile?.siteIds && userProfile.siteIds.length > 0) {
-        sites = sites.filter(s => userProfile.siteIds.includes(s.id));
-      } else if (!isSuperAdmin && userProfile?.siteId) {
-        sites = sites.filter(s => s.id === userProfile.siteId);
-      }
-      
+      const sitesSnapshot = await getDocs(
+        query(collection(db, "companySites"))
+      );
+      let sites = sitesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as CompanySite[];
+
+      // 🔹 Filtra le sedi solo per l’azienda selezionata
+      sites = sites.filter((s) => s.companyId === companyId);
+
+      // 🔹 Imposta comunque le sedi trovate (anche se è una sola)
       setAvailableSites(sites);
-      
-      // Imposta sede di default
+
+      // 🔹 Imposta sede selezionata di default
       if (sites.length > 0) {
-        const defaultSite = userProfile?.siteId && sites.find(s => s.id === userProfile.siteId)
-          ? userProfile.siteId
-          : sites[0].id;
+        const defaultSite =
+          userProfile?.siteId && sites.find((s) => s.id === userProfile.siteId)
+            ? userProfile.siteId
+            : sites[0].id;
         setSelectedSiteId(defaultSite);
       } else {
-        setSelectedSiteId('');
+        setSelectedSiteId("");
       }
     } catch (error) {
-      console.error('Errore caricamento sedi:', error);
+      console.error("Errore caricamento sedi:", error);
     }
   };
-  
+
   const updateCompanyName = async (companyId: string) => {
     try {
-      const companyDoc = await getDoc(doc(db, 'companies', companyId));
+      const companyDoc = await getDoc(doc(db, "companies", companyId));
       if (companyDoc.exists()) {
         setCompanyName(companyDoc.data().name);
       }
     } catch (error) {
-      console.error('Errore caricamento nome azienda:', error);
+      console.error("Errore caricamento nome azienda:", error);
     }
   };
 
@@ -245,19 +266,19 @@ const Dashboard = () => {
     await logout();
     navigate("/login");
   };
-  
+
   // Filtra le risposte in base alla selezione di azienda e sede
   const filteredResponses = useMemo(() => {
     let filtered = responses;
-    
+
     if (selectedCompanyId) {
-      filtered = filtered.filter(r => r.companyId === selectedCompanyId);
+      filtered = filtered.filter((r) => r.companyId === selectedCompanyId);
     }
-    
+
     if (selectedSiteId) {
-      filtered = filtered.filter(r => r.siteId === selectedSiteId);
+      filtered = filtered.filter((r) => r.siteId === selectedSiteId);
     }
-    
+
     return filtered;
   }, [responses, selectedCompanyId, selectedSiteId]);
 
@@ -281,19 +302,29 @@ const Dashboard = () => {
     });
     return FULL_QUESTIONS.map((q) => {
       const counts = grouped[q.id] || {};
-      const data = Object.entries(counts).map(([name, value]) => ({ name, value }));
-      return { id: q.id, label: q.label, total: data.reduce((s, d) => s + d.value, 0), data };
+      const data = Object.entries(counts).map(([name, value]) => ({
+        name,
+        value,
+      }));
+      return {
+        id: q.id,
+        label: q.label,
+        total: data.reduce((s, d) => s + d.value, 0),
+        data,
+      };
     });
   }, [filteredResponses]);
 
   const { satisfactionData, averageScore } = useMemo(() => {
-    if (filteredResponses.length === 0) return { satisfactionData: [], averageScore: 0 };
+    if (filteredResponses.length === 0)
+      return { satisfactionData: [], averageScore: 0 };
     const satisfactionCounts: Record<string, number> = {};
     let totalScore = 0;
     let totalCount = 0;
     filteredResponses.forEach((r) => {
       const val = r.answers?.q7 || r.answers?.["10.1"] || "";
-      if (typeof val === 'string' && val) satisfactionCounts[val] = (satisfactionCounts[val] || 0) + 1;
+      if (typeof val === "string" && val)
+        satisfactionCounts[val] = (satisfactionCounts[val] || 0) + 1;
       const scoreMap: Record<string, number> = {
         Eccellente: 100,
         Ottimo: 90,
@@ -321,17 +352,18 @@ const Dashboard = () => {
         totalCount++;
       }
     });
-    const satisfactionData = Object.entries(satisfactionCounts).map(([name, value]) => ({ name, value }));
-    const averageScore = totalCount > 0 ? Math.round(totalScore / totalCount) : 0;
+    const satisfactionData = Object.entries(satisfactionCounts).map(
+      ([name, value]) => ({ name, value })
+    );
+    const averageScore =
+      totalCount > 0 ? Math.round(totalScore / totalCount) : 0;
     return { satisfactionData, averageScore };
   }, [filteredResponses]);
 
-    return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5">
       <header className="border-b bg-card/80 backdrop-blur-md shadow-md sticky top-0 z-50">
-        <div
-          className="container mx-auto px-4 py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"
-        >
+        <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-center sm:text-left">
             <div className="flex justify-center sm:justify-start">
               <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-glow">
@@ -351,27 +383,34 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground break-all">
                 {user?.email}
               </p>
-              
-              {/* Selettori Azienda e Sede */}
+
               <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                {availableCompanies.length > 1 && (
-                  <Popover open={openCompany} onOpenChange={setOpenCompany}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full sm:w-auto justify-between gap-2 bg-background/50 hover:bg-background"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Building2 className="h-3.5 w-3.5" />
-                          <span className="text-xs">
-                            {availableCompanies.find(c => c.id === selectedCompanyId)?.name || 'Seleziona azienda'}
-                          </span>
-                        </div>
+                <Popover open={openCompany} onOpenChange={setOpenCompany}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-auto justify-between gap-2 bg-background/50 hover:bg-background"
+                      disabled={availableCompanies.length === 1} // disattivo se c’è solo una
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5" />
+                        <span className="text-xs">
+                          {availableCompanies.find(
+                            (c) => c.id === selectedCompanyId
+                          )?.name || "Seleziona azienda"}
+                        </span>
+                      </div>
+                      {availableCompanies.length > 1 && (
                         <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  {availableCompanies.length > 1 && (
+                    <PopoverContent
+                      className="w-[240px] p-0 bg-background z-50"
+                      align="start"
+                    >
                       <Command>
                         <CommandInput placeholder="Cerca azienda..." />
                         <CommandList>
@@ -389,7 +428,9 @@ const Dashboard = () => {
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    selectedCompanyId === company.id ? "opacity-100" : "opacity-0"
+                                    selectedCompanyId === company.id
+                                      ? "opacity-100"
+                                      : "opacity-0"
                                   )}
                                 />
                                 {company.name}
@@ -399,27 +440,34 @@ const Dashboard = () => {
                         </CommandList>
                       </Command>
                     </PopoverContent>
-                  </Popover>
-                )}
-                
-                {availableSites.length > 1 && (
-                  <Popover open={openSite} onOpenChange={setOpenSite}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full sm:w-auto justify-between gap-2 bg-background/50 hover:bg-background"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5" />
-                          <span className="text-xs">
-                            {availableSites.find(s => s.id === selectedSiteId)?.name || 'Seleziona sede'}
-                          </span>
-                        </div>
+                  )}
+                </Popover>
+
+                <Popover open={openSite} onOpenChange={setOpenSite}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-auto justify-between gap-2 bg-background/50 hover:bg-background"
+                      disabled={availableSites.length === 1} // disattivo se unica sede
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        <span className="text-xs">
+                          {availableSites.find((s) => s.id === selectedSiteId)
+                            ?.name || "Seleziona sede"}
+                        </span>
+                      </div>
+                      {availableSites.length > 1 && (
                         <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  {availableSites.length > 1 && (
+                    <PopoverContent
+                      className="w-[240px] p-0 bg-background z-50"
+                      align="start"
+                    >
                       <Command>
                         <CommandInput placeholder="Cerca sede..." />
                         <CommandList>
@@ -437,7 +485,9 @@ const Dashboard = () => {
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    selectedSiteId === site.id ? "opacity-100" : "opacity-0"
+                                    selectedSiteId === site.id
+                                      ? "opacity-100"
+                                      : "opacity-0"
                                   )}
                                 />
                                 {site.name}
@@ -447,8 +497,8 @@ const Dashboard = () => {
                         </CommandList>
                       </Command>
                     </PopoverContent>
-                  </Popover>
-                )}
+                  )}
+                </Popover>
               </div>
             </div>
           </div>
@@ -480,9 +530,9 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Nuovo Questionario */}
-          <Card 
-            className="hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 hover:-translate-y-1 group" 
-            onClick={() => navigate('/compile')}
+          <Card
+            className="hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 hover:-translate-y-1 group"
+            onClick={() => navigate("/compile")}
           >
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
@@ -491,14 +541,16 @@ const Dashboard = () => {
                 </div>
                 <CardTitle className="text-xl">Nuovo Questionario</CardTitle>
               </div>
-              <CardDescription className="text-base">Compila un nuovo questionario di valutazione VDT</CardDescription>
+              <CardDescription className="text-base">
+                Compila un nuovo questionario di valutazione VDT
+              </CardDescription>
             </CardHeader>
           </Card>
 
           {/* Analisi Dati */}
-          <Card 
-            className="hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 hover:-translate-y-1 group" 
-            onClick={() => navigate('/analysis')}
+          <Card
+            className="hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 hover:-translate-y-1 group"
+            onClick={() => navigate("/analysis")}
           >
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
@@ -507,14 +559,16 @@ const Dashboard = () => {
                 </div>
                 <CardTitle className="text-xl">Analisi Dati</CardTitle>
               </div>
-              <CardDescription className="text-base">Visualizza statistiche e analisi dettagliate dei dati raccolti</CardDescription>
+              <CardDescription className="text-base">
+                Visualizza statistiche e analisi dettagliate dei dati raccolti
+              </CardDescription>
             </CardHeader>
           </Card>
 
           {/* Guida / FAQ */}
-          <Card 
-            className="hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 hover:-translate-y-1 group" 
-            onClick={() => navigate('/guide')}
+          <Card
+            className="hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 hover:-translate-y-1 group"
+            onClick={() => navigate("/guide")}
           >
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
@@ -523,7 +577,9 @@ const Dashboard = () => {
                 </div>
                 <CardTitle className="text-xl">Guida / FAQ</CardTitle>
               </div>
-              <CardDescription className="text-base">Scopri come usare l'app e visualizza le FAQ</CardDescription>
+              <CardDescription className="text-base">
+                Scopri come usare l'app e visualizza le FAQ
+              </CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -533,24 +589,34 @@ const Dashboard = () => {
           <Card className="border-l-4 border-l-primary shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardDescription className="text-xs font-medium uppercase tracking-wide">Risposte Totali</CardDescription>
+                <CardDescription className="text-xs font-medium uppercase tracking-wide">
+                  Risposte Totali
+                </CardDescription>
                 <Users className="h-5 w-5 text-primary/50" />
               </div>
               <CardTitle className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
                 {filteredResponses.length}
               </CardTitle>
-              <p className="text-xs text-muted-foreground">Questionari completati</p>
+              <p className="text-xs text-muted-foreground">
+                Questionari completati
+              </p>
             </CardHeader>
           </Card>
-          
+
           <Card className="border-l-4 border-l-accent shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardDescription className="text-xs font-medium uppercase tracking-wide">Questionari Attivi</CardDescription>
+                <CardDescription className="text-xs font-medium uppercase tracking-wide">
+                  Questionari Attivi
+                </CardDescription>
                 <FileText className="h-5 w-5 text-accent/50" />
               </div>
-              <CardTitle className="text-4xl font-bold text-accent">1</CardTitle>
-              <p className="text-xs text-muted-foreground">Attualmente disponibile</p>
+              <CardTitle className="text-4xl font-bold text-accent">
+                1
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Attualmente disponibile
+              </p>
             </CardHeader>
           </Card>
         </div>
@@ -564,8 +630,14 @@ const Dashboard = () => {
                   <FileText className="h-12 w-12 text-muted-foreground" />
                 </div>
               </div>
-              <p className="text-lg text-muted-foreground">Nessun dato disponibile al momento</p>
-              <Button onClick={() => navigate("/compile")} variant="gradient" size="lg">
+              <p className="text-lg text-muted-foreground">
+                Nessun dato disponibile al momento
+              </p>
+              <Button
+                onClick={() => navigate("/compile")}
+                variant="gradient"
+                size="lg"
+              >
                 <PenSquare className="mr-2 h-5 w-5" />
                 Compila il primo questionario
               </Button>
@@ -577,8 +649,12 @@ const Dashboard = () => {
               {satisfactionData.length > 0 && (
                 <Card className="shadow-lg border-2">
                   <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
-                    <CardTitle className="text-xl">Soddisfazione Generale</CardTitle>
-                    <CardDescription>Distribuzione delle risposte per livello di soddisfazione</CardDescription>
+                    <CardTitle className="text-xl">
+                      Soddisfazione Generale
+                    </CardTitle>
+                    <CardDescription>
+                      Distribuzione delle risposte per livello di soddisfazione
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={260}>
@@ -589,7 +665,9 @@ const Dashboard = () => {
                           cy="50%"
                           outerRadius={90}
                           dataKey="value"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }) =>
+                            `${name}: ${(percent * 100).toFixed(0)}%`
+                          }
                         >
                           {satisfactionData.map((_, i) => (
                             <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -604,13 +682,21 @@ const Dashboard = () => {
 
               <Card className="shadow-lg border-2">
                 <CardHeader className="border-b bg-gradient-to-r from-accent/5 to-transparent">
-                  <CardTitle className="text-xl">Punteggio Medio Generale</CardTitle>
-                  <CardDescription>Valutazione complessiva su scala 0-100</CardDescription>
+                  <CardTitle className="text-xl">
+                    Punteggio Medio Generale
+                  </CardTitle>
+                  <CardDescription>
+                    Valutazione complessiva su scala 0-100
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div style={{ height: 260 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={[{ name: "Media Generale", punteggio: averageScore }]}>
+                      <BarChart
+                        data={[
+                          { name: "Media Generale", punteggio: averageScore },
+                        ]}
+                      >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis domain={[0, 100]} />
@@ -635,14 +721,23 @@ const Dashboard = () => {
               {groupedByQuestion
                 .filter((q) => q.total > 0)
                 .map((q) => (
-                  <Card key={q.id} className="shadow-md border hover:shadow-lg transition-shadow">
+                  <Card
+                    key={q.id}
+                    className="shadow-md border hover:shadow-lg transition-shadow"
+                  >
                     <CardHeader className="pb-3 space-y-1">
-                      <CardTitle className="text-base leading-tight">{q.label}</CardTitle>
-                      <CardDescription className="text-xs">{q.total} risposte totali</CardDescription>
+                      <CardTitle className="text-base leading-tight">
+                        {q.label}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {q.total} risposte totali
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {q.data.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">Nessuna risposta</div>
+                        <div className="text-sm text-muted-foreground">
+                          Nessuna risposta
+                        </div>
                       ) : (
                         <div style={{ height: 220 }}>
                           <ResponsiveContainer width="100%" height="100%">
@@ -652,11 +747,18 @@ const Dashboard = () => {
                             >
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis type="number" allowDecimals={false} />
-                              <YAxis type="category" dataKey="name" width={160} />
+                              <YAxis
+                                type="category"
+                                dataKey="name"
+                                width={160}
+                              />
                               <Tooltip />
                               <Bar dataKey="value">
                                 {q.data.map((_, i) => (
-                                  <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+                                  <Cell
+                                    key={`cell-${i}`}
+                                    fill={COLORS[i % COLORS.length]}
+                                  />
                                 ))}
                               </Bar>
                             </BarChart>

@@ -18,8 +18,6 @@ export interface UserProfile {
   userId: string;
   email: string;
   role: UserRole;
-  companyId?: string | null;
-  siteId?: string | null;
+  companyIds?: string[];
   siteIds?: string[];
-  createdAt: Date;
 }
