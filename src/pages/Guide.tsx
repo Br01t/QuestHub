@@ -82,7 +82,7 @@ const WIP_ITEMS = [
   "Gestione avanzata grafici per confronto reparti",
   "Pulizia e normalizzazione dei dati demo",
   "Ottimizzazione stile mobile",
-  "Possibile aggiunta: creazione questionari personalizzati da admin"
+  "Possibili aggiunte: creazione questionari personalizzati da admin + varie funzionalità extra"
 ];
 
 const Guide = () => {
