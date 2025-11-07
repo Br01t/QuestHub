@@ -255,7 +255,7 @@ export default function CompanyAnalysis({
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
         {/* Filtri Azienda/Sede */}
-        <div className="flex flex-wrap gap-2">
+        {/* <div className="flex flex-wrap gap-2">
           {availableCompanies.length > 0 && (
             <select
               value={selectedCompanyFilter}
@@ -290,7 +290,7 @@ export default function CompanyAnalysis({
                 ))}
             </select>
           )}
-        </div>
+        </div> */}
 
         {/* Pulsante export */}
         <Button
