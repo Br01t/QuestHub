@@ -41,6 +41,12 @@ interface WorkerAnalysisProps {
   filteredResponses: ResponseDoc[];
   userProfile: any;
   isSuperAdmin: boolean;
+  availableCompanies: { id: string; name: string }[];
+  availableSites: { id: string; name: string; companyId: string }[];
+  selectedCompanyFilter: string;
+  setSelectedCompanyFilter: (value: string) => void;
+  selectedSiteFilter: string;
+  setSelectedSiteFilter: (value: string) => void;
 }
 
 const FULL_QUESTIONS: { id: string; label: string }[] = [
@@ -107,6 +113,12 @@ export default function WorkerAnalysis({
   filteredResponses,
   userProfile,
   isSuperAdmin,
+  availableCompanies,
+  availableSites,
+  selectedCompanyFilter,
+  setSelectedCompanyFilter,
+  selectedSiteFilter,
+  setSelectedSiteFilter,
 }: WorkerAnalysisProps) {
   const navigate = useNavigate();
   const [selectedWorker, setSelectedWorker] = useState<string>("all");
@@ -309,32 +321,73 @@ export default function WorkerAnalysis({
 
   return (
     <div>
-      <div className="flex justify-end mb-4 gap-2">
-        <Button
-          variant="default"
-          className="gap-2"
-          onClick={generatePDF}
-          disabled={selectedWorker === "all"}
-        >
-          <BarChart3 className="h-4 w-4" />
-          Esporta PDF
-        </Button>
+      <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+        {/* Filtri Azienda/Sede */}
+        <div className="flex flex-wrap gap-2">
+          {availableCompanies.length > 0 && (
+            <select
+              value={selectedCompanyFilter}
+              onChange={(e) => {
+                setSelectedCompanyFilter(e.target.value);
+                setSelectedSiteFilter("all");
+              }}
+              className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+            >
+              <option value="all">Tutte le aziende</option>
+              {availableCompanies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          )}
 
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={() =>
-            navigate("/final-report", {
-              state: {
-                filteredResponses: responsesByWorker,
-                selectedWorker,
-              },
-            })
-          }
-          disabled={selectedWorker === "all"}
-        >
-          📝 Relazione finale
-        </Button>
+          {availableSites.filter(s => selectedCompanyFilter === "all" || s.companyId === selectedCompanyFilter).length > 0 && (
+            <select
+              value={selectedSiteFilter}
+              onChange={(e) => setSelectedSiteFilter(e.target.value)}
+              className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+            >
+              <option value="all">Tutte le sedi</option>
+              {availableSites
+                .filter(s => selectedCompanyFilter === "all" || s.companyId === selectedCompanyFilter)
+                .map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name}
+                  </option>
+                ))}
+            </select>
+          )}
+        </div>
+
+        {/* Pulsanti */}
+        <div className="flex gap-2">
+          <Button
+            variant="default"
+            className="gap-2"
+            onClick={generatePDF}
+            disabled={selectedWorker === "all"}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Esporta PDF
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() =>
+              navigate("/final-report", {
+                state: {
+                  filteredResponses: responsesByWorker,
+                  selectedWorker,
+                },
+              })
+            }
+            disabled={selectedWorker === "all"}
+          >
+            📝 Relazione finale
+          </Button>
+        </div>
       </div>
 
       {/* Selettore lavoratore */}

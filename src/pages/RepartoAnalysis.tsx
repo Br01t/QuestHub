@@ -108,12 +108,24 @@ interface RepartoAnalysisProps {
   filteredResponses: ResponseDoc[];
   dateFrom?: Date;
   dateTo?: Date;
+  availableCompanies: { id: string; name: string }[];
+  availableSites: { id: string; name: string; companyId: string }[];
+  selectedCompanyFilter: string;
+  setSelectedCompanyFilter: (value: string) => void;
+  selectedSiteFilter: string;
+  setSelectedSiteFilter: (value: string) => void;
 }
 
 export default function RepartoAnalysis({
   filteredResponses,
   dateFrom,
   dateTo,
+  availableCompanies,
+  availableSites,
+  selectedCompanyFilter,
+  setSelectedCompanyFilter,
+  selectedSiteFilter,
+  setSelectedSiteFilter,
 }: RepartoAnalysisProps) {
   const [selectedReparto, setSelectedReparto] = useState<string>("all");
   const [openReparto, setOpenReparto] = useState(false);
@@ -219,8 +231,47 @@ export default function RepartoAnalysis({
 
   return (
     <div className="space-y-6">
-      {/* Pulsante PDF */}
-      <div className="flex justify-end mb-4">
+      {/* Filtri e Pulsante PDF */}
+      <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+        {/* Filtri Azienda/Sede */}
+        <div className="flex flex-wrap gap-2">
+          {availableCompanies.length > 0 && (
+            <select
+              value={selectedCompanyFilter}
+              onChange={(e) => {
+                setSelectedCompanyFilter(e.target.value);
+                setSelectedSiteFilter("all");
+              }}
+              className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+            >
+              <option value="all">Tutte le aziende</option>
+              {availableCompanies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {availableSites.filter(s => selectedCompanyFilter === "all" || s.companyId === selectedCompanyFilter).length > 0 && (
+            <select
+              value={selectedSiteFilter}
+              onChange={(e) => setSelectedSiteFilter(e.target.value)}
+              className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+            >
+              <option value="all">Tutte le sedi</option>
+              {availableSites
+                .filter(s => selectedCompanyFilter === "all" || s.companyId === selectedCompanyFilter)
+                .map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name}
+                  </option>
+                ))}
+            </select>
+          )}
+        </div>
+
+        {/* Pulsante export */}
         <Button
           variant="default"
           className="gap-2"

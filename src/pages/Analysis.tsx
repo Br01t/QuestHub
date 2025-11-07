@@ -212,113 +212,17 @@ export default function Analysis() {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Filtri */}
+        {/* Filtro Date */}
         <Card className="shadow-lg border-2">
           <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b">
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
-              Filtri
+              Filtri Temporali
             </CardTitle>
-            <CardDescription>Filtra le analisi per periodo, azienda e sede</CardDescription>
+            <CardDescription>Filtra le analisi per periodo di compilazione</CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 overflow-x-hidden px-2 sm:px-4 space-y-6">
-            {/* Filtri Azienda e Sede */}
+          <CardContent className="pt-6 overflow-x-hidden px-2 sm:px-4">
             <div className="flex flex-wrap gap-4 items-end">
-              {availableCompanies.length > 0 && (
-                <div className="flex flex-col gap-2 min-w-[240px]">
-                  <label className="text-sm font-medium">Azienda</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="justify-start text-left font-normal"
-                      >
-                        {selectedCompanyFilter === "all"
-                          ? "Tutte le aziende"
-                          : availableCompanies.find((c) => c.id === selectedCompanyFilter)?.name || "Seleziona"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[240px] p-0" align="start">
-                      <div className="p-2 space-y-1">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => setSelectedCompanyFilter("all")}
-                        >
-                          Tutte le aziende
-                        </Button>
-                        {availableCompanies.map((company) => (
-                          <Button
-                            key={company.id}
-                            variant="ghost"
-                            className="w-full justify-start"
-                            onClick={() => setSelectedCompanyFilter(company.id)}
-                          >
-                            {company.name}
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )}
-
-              {availableSites.length > 0 && (
-                <div className="flex flex-col gap-2 min-w-[240px]">
-                  <label className="text-sm font-medium">Sede</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="justify-start text-left font-normal"
-                      >
-                        {selectedSiteFilter === "all"
-                          ? "Tutte le sedi"
-                          : availableSites.find((s) => s.id === selectedSiteFilter)?.name || "Seleziona"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[240px] p-0" align="start">
-                      <div className="p-2 space-y-1">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => setSelectedSiteFilter("all")}
-                        >
-                          Tutte le sedi
-                        </Button>
-                        {availableSites.map((site) => (
-                          <Button
-                            key={site.id}
-                            variant="ghost"
-                            className="w-full justify-start"
-                            onClick={() => setSelectedSiteFilter(site.id)}
-                          >
-                            {site.name}
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )}
-
-              {(selectedCompanyFilter !== "all" || selectedSiteFilter !== "all") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedCompanyFilter("all");
-                    setSelectedSiteFilter("all");
-                  }}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Rimuovi filtri azienda/sede
-                </Button>
-              )}
-            </div>
-
-            {/* Filtri Date */}
-            <div className="flex flex-wrap gap-4 items-end border-t pt-6">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Data inizio</label>
                 <Popover>
@@ -410,6 +314,12 @@ export default function Analysis() {
                   filteredResponses={filteredResponses}
                   userProfile={userProfile}
                   isSuperAdmin={isSuperAdmin}
+                  availableCompanies={availableCompanies}
+                  availableSites={availableSites}
+                  selectedCompanyFilter={selectedCompanyFilter}
+                  setSelectedCompanyFilter={setSelectedCompanyFilter}
+                  selectedSiteFilter={selectedSiteFilter}
+                  setSelectedSiteFilter={setSelectedSiteFilter}
                 />
               </TabsContent>
 
@@ -418,6 +328,12 @@ export default function Analysis() {
                   filteredResponses={filteredResponses}
                   dateFrom={dateFrom}
                   dateTo={dateTo}
+                  availableCompanies={availableCompanies}
+                  availableSites={availableSites}
+                  selectedCompanyFilter={selectedCompanyFilter}
+                  setSelectedCompanyFilter={setSelectedCompanyFilter}
+                  selectedSiteFilter={selectedSiteFilter}
+                  setSelectedSiteFilter={setSelectedSiteFilter}
                 />
               </TabsContent>
 
@@ -426,6 +342,12 @@ export default function Analysis() {
                   filteredResponses={filteredResponses}
                   userProfile={userProfile}
                   isSuperAdmin={isSuperAdmin}
+                  availableCompanies={availableCompanies}
+                  availableSites={availableSites}
+                  selectedCompanyFilter={selectedCompanyFilter}
+                  setSelectedCompanyFilter={setSelectedCompanyFilter}
+                  selectedSiteFilter={selectedSiteFilter}
+                  setSelectedSiteFilter={setSelectedSiteFilter}
                 />
               </TabsContent>
 
@@ -434,6 +356,12 @@ export default function Analysis() {
                   filteredResponses={filteredResponses}
                   userProfile={userProfile}
                   isSuperAdmin={isSuperAdmin}
+                  availableCompanies={availableCompanies}
+                  availableSites={availableSites}
+                  selectedCompanyFilter={selectedCompanyFilter}
+                  setSelectedCompanyFilter={setSelectedCompanyFilter}
+                  selectedSiteFilter={selectedSiteFilter}
+                  setSelectedSiteFilter={setSelectedSiteFilter}
                 />
               </TabsContent>
 
