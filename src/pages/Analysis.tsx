@@ -232,12 +232,12 @@ export default function Analysis() {
           </CardHeader>
           <CardContent className="pt-6 overflow-x-hidden px-2 sm:px-4">
             <Tabs value={tab} onValueChange={(v: "workers" | "reparti" | "sedi" | "aziende" | "traReparti") => setTab(v)}>
-              <TabsList className="grid grid-cols-5 gap-2 w-full">
-                <TabsTrigger value="workers">Per Lavoratore</TabsTrigger>
-                <TabsTrigger value="reparti">Per Reparto</TabsTrigger>
-                <TabsTrigger value="sedi">Per Sede</TabsTrigger>
-                <TabsTrigger value="aziende">Per Azienda</TabsTrigger>
-                <TabsTrigger value="traReparti">Tra Reparti</TabsTrigger>
+              <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 w-full h-auto bg-muted p-2 rounded-lg">
+                <TabsTrigger value="workers" className="text-xs sm:text-sm whitespace-nowrap">Per Lavoratore</TabsTrigger>
+                <TabsTrigger value="reparti" className="text-xs sm:text-sm whitespace-nowrap">Per Reparto</TabsTrigger>
+                <TabsTrigger value="sedi" className="text-xs sm:text-sm whitespace-nowrap">Per Sede</TabsTrigger>
+                <TabsTrigger value="aziende" className="text-xs sm:text-sm whitespace-nowrap">Per Azienda</TabsTrigger>
+                <TabsTrigger value="traReparti" className="text-xs sm:text-sm whitespace-nowrap col-span-2 sm:col-span-1">Tra Reparti</TabsTrigger>
               </TabsList>
 
               <TabsContent value="workers" className="mt-8">
