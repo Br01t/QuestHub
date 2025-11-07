@@ -161,6 +161,17 @@ export default function WorkerAnalysis({
     return str;
   };
 
+  const renderAnswerForPDF = (val: AnswerValue): string => {
+    if (val === undefined || val === null || val === "") return "—";
+    if (Array.isArray(val)) return val.join(", ");
+    const str = String(val);
+    
+    if (str.startsWith("data:image/") || str.startsWith("http")) {
+      return "[Immagine]";
+    }
+    return str;
+  };
+
   const isTextQuestion = (id: string): boolean =>
     id.includes("_note") || id.startsWith("meta_") || id === "foto_postazione";
 
@@ -236,7 +247,7 @@ export default function WorkerAnalysis({
       }
 
       const answers = responsesByWorker.map((r) =>
-        renderAnswer(r.answers?.[q.id])
+        renderAnswerForPDF(r.answers?.[q.id])
       );
       body.push({ row: [q.label, ...answers], questionId: q.id });
     });

@@ -48,6 +48,11 @@ export default function Analysis() {
   const [tab, setTab] = useState<"workers" | "reparti" | "sedi" | "aziende" | "traReparti">("workers");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  
+  const [availableCompanies, setAvailableCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>("all");
+  const [availableSites, setAvailableSites] = useState<{ id: string; name: string; companyId: string }[]>([]);
+  const [selectedSiteFilter, setSelectedSiteFilter] = useState<string>("all");
 
   useEffect(() => {
     if (!user) {
@@ -55,7 +60,17 @@ export default function Analysis() {
       return;
     }
     load();
+    loadCompaniesAndSites();
   }, [user]);
+  
+  useEffect(() => {
+    if (selectedCompanyFilter && selectedCompanyFilter !== "all") {
+      loadSitesForCompany(selectedCompanyFilter);
+    } else {
+      setAvailableSites([]);
+      setSelectedSiteFilter("all");
+    }
+  }, [selectedCompanyFilter]);
 
   const load = async () => {
     setLoading(true);
@@ -71,15 +86,64 @@ export default function Analysis() {
     }
   };
 
+  const loadCompaniesAndSites = async () => {
+    try {
+      const companiesSnapshot = await getDocs(collection(db, "companies"));
+      let companies = companiesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+      }));
+
+      if (!isSuperAdmin && userProfile) {
+        const allowedCompanyIds = userProfile.companyIds || [];
+        if (allowedCompanyIds.length > 0) {
+          companies = companies.filter((c) => allowedCompanyIds.includes(c.id));
+        } else {
+          companies = [];
+        }
+      }
+
+      setAvailableCompanies(companies);
+    } catch (error) {
+      console.error("Errore caricamento aziende:", error);
+    }
+  };
+
+  const loadSitesForCompany = async (companyId: string) => {
+    try {
+      const sitesSnapshot = await getDocs(collection(db, "companySites"));
+      let sites = sitesSnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          name: doc.data().name,
+          companyId: doc.data().companyId,
+        }))
+        .filter((s) => s.companyId === companyId);
+
+      if (!isSuperAdmin && userProfile) {
+        const allowedSiteIds = userProfile.siteIds || [];
+        if (allowedSiteIds.length > 0) {
+          sites = sites.filter((s) => allowedSiteIds.includes(s.id));
+        }
+      }
+
+      setAvailableSites(sites);
+    } catch (error) {
+      console.error("Errore caricamento sedi:", error);
+    }
+  };
+
   const filteredResponses = useMemo(() => {
     let filtered = responses;
     
     // Filtro per permessi utente
     if (!isSuperAdmin && userProfile) {
       filtered = filtered.filter((r) => {
-        // Se l'utente ha un'azienda assegnata, mostra solo le risposte di quella azienda
-        if (userProfile.companyId && r.companyId !== userProfile.companyId) {
-          return false;
+        // Se l'utente ha aziende assegnate, mostra solo le risposte di quelle aziende
+        if (userProfile.companyIds && userProfile.companyIds.length > 0) {
+          if (!r.companyId || !userProfile.companyIds.includes(r.companyId)) {
+            return false;
+          }
         }
         
         // Se l'utente ha sedi assegnate, mostra solo le risposte di quelle sedi
@@ -87,13 +151,18 @@ export default function Analysis() {
           return r.siteId && userProfile.siteIds.includes(r.siteId);
         }
         
-        // Se l'utente ha una sede singola assegnata (compatibilità)
-        if (userProfile.siteId && r.siteId !== userProfile.siteId) {
-          return false;
-        }
-        
         return true;
       });
+    }
+    
+    // Filtro per azienda selezionata
+    if (selectedCompanyFilter && selectedCompanyFilter !== "all") {
+      filtered = filtered.filter((r) => r.companyId === selectedCompanyFilter);
+    }
+    
+    // Filtro per sede selezionata
+    if (selectedSiteFilter && selectedSiteFilter !== "all") {
+      filtered = filtered.filter((r) => r.siteId === selectedSiteFilter);
     }
     
     // Filtro per date
@@ -114,7 +183,7 @@ export default function Analysis() {
       });
     }
     return filtered;
-  }, [responses, dateFrom, dateTo, userProfile, isSuperAdmin]);
+  }, [responses, dateFrom, dateTo, userProfile, isSuperAdmin, selectedCompanyFilter, selectedSiteFilter]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5">
@@ -143,17 +212,113 @@ export default function Analysis() {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Filtro Date */}
+        {/* Filtri */}
         <Card className="shadow-lg border-2">
           <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b">
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
-              Filtri Temporali
+              Filtri
             </CardTitle>
-            <CardDescription>Filtra le analisi per periodo di compilazione</CardDescription>
+            <CardDescription>Filtra le analisi per periodo, azienda e sede</CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 overflow-x-hidden px-2 sm:px-4">
+          <CardContent className="pt-6 overflow-x-hidden px-2 sm:px-4 space-y-6">
+            {/* Filtri Azienda e Sede */}
             <div className="flex flex-wrap gap-4 items-end">
+              {availableCompanies.length > 0 && (
+                <div className="flex flex-col gap-2 min-w-[240px]">
+                  <label className="text-sm font-medium">Azienda</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="justify-start text-left font-normal"
+                      >
+                        {selectedCompanyFilter === "all"
+                          ? "Tutte le aziende"
+                          : availableCompanies.find((c) => c.id === selectedCompanyFilter)?.name || "Seleziona"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[240px] p-0" align="start">
+                      <div className="p-2 space-y-1">
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => setSelectedCompanyFilter("all")}
+                        >
+                          Tutte le aziende
+                        </Button>
+                        {availableCompanies.map((company) => (
+                          <Button
+                            key={company.id}
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={() => setSelectedCompanyFilter(company.id)}
+                          >
+                            {company.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+
+              {availableSites.length > 0 && (
+                <div className="flex flex-col gap-2 min-w-[240px]">
+                  <label className="text-sm font-medium">Sede</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="justify-start text-left font-normal"
+                      >
+                        {selectedSiteFilter === "all"
+                          ? "Tutte le sedi"
+                          : availableSites.find((s) => s.id === selectedSiteFilter)?.name || "Seleziona"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[240px] p-0" align="start">
+                      <div className="p-2 space-y-1">
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => setSelectedSiteFilter("all")}
+                        >
+                          Tutte le sedi
+                        </Button>
+                        {availableSites.map((site) => (
+                          <Button
+                            key={site.id}
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={() => setSelectedSiteFilter(site.id)}
+                          >
+                            {site.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+
+              {(selectedCompanyFilter !== "all" || selectedSiteFilter !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCompanyFilter("all");
+                    setSelectedSiteFilter("all");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Rimuovi filtri azienda/sede
+                </Button>
+              )}
+            </div>
+
+            {/* Filtri Date */}
+            <div className="flex flex-wrap gap-4 items-end border-t pt-6">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Data inizio</label>
                 <Popover>
@@ -218,7 +383,7 @@ export default function Analysis() {
                   }}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Rimuovi filtri
+                  Rimuovi filtri date
                 </Button>
               )}
             </div>
@@ -275,6 +440,8 @@ export default function Analysis() {
               <TabsContent value="traReparti" className="mt-8">
                 <RepartiComparison 
                   filteredResponses={filteredResponses}
+                  availableCompanies={availableCompanies}
+                  availableSites={availableSites}
                 />
               </TabsContent>
             </Tabs>

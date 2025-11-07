@@ -83,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userId: userCredential.user.uid,
         email: userCredential.user.email || email,
         role: "user" as UserRole,
-        createdAt: new Date(),
       };
       await setDoc(doc(db, "userProfiles", userCredential.user.uid), userProfileData);
 

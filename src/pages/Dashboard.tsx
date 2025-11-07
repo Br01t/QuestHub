@@ -211,10 +211,8 @@ const Dashboard = () => {
       })) as Company[];
 
       if (!isSuperAdmin) {
-        // supporta sia userProfile.companyIds (array) sia companyId (string) per retrocompatibilità
-        const allowedCompanyIds: string[] =
-          (userProfile && (userProfile as any).companyIds) ??
-          (userProfile && userProfile.companyId ? [userProfile.companyId] : []);
+        // supporta userProfile.companyIds (array)
+        const allowedCompanyIds: string[] = userProfile?.companyIds || [];
 
         if (allowedCompanyIds.length > 0) {
           companies = companies.filter((c) => allowedCompanyIds.includes(c.id));
@@ -226,14 +224,9 @@ const Dashboard = () => {
 
       setAvailableCompanies(companies);
 
-      // Imposta azienda di default: se l'utente ha aziende assegnate scegli la prima (o quella esplicitamente in userProfile.companyId)
+      // Imposta azienda di default: se l'utente ha aziende assegnate scegli la prima
       if (companies.length > 0) {
-        // preferisci userProfile.companyId se presente, altrimenti la prima disponibile
-        const defaultCompany =
-          (userProfile?.companyId &&
-          companies.find((c) => c.id === userProfile.companyId)
-            ? userProfile.companyId
-            : companies[0].id) || companies[0].id;
+        const defaultCompany = companies[0].id;
         setSelectedCompanyId(defaultCompany);
       } else {
         setSelectedCompanyId("");
@@ -256,9 +249,7 @@ const Dashboard = () => {
       sites = sites.filter((s) => s.companyId === companyId);
 
       if (!isSuperAdmin) {
-        const allowedSiteIds: string[] =
-          (userProfile && (userProfile as any).siteIds) ??
-          (userProfile && userProfile.siteId ? [userProfile.siteId] : []);
+        const allowedSiteIds: string[] = userProfile?.siteIds || [];
 
         if (allowedSiteIds.length > 0) {
           sites = sites.filter((s) => allowedSiteIds.includes(s.id));
@@ -268,10 +259,7 @@ const Dashboard = () => {
       setAvailableSites(sites);
 
       if (sites.length > 0) {
-        const defaultSite =
-          (userProfile?.siteId && sites.find((s) => s.id === userProfile.siteId)
-            ? userProfile.siteId
-            : sites[0].id) || sites[0].id;
+        const defaultSite = sites[0].id;
         setSelectedSiteId(defaultSite);
       } else {
         setSelectedSiteId("");

@@ -109,33 +109,71 @@ interface Response {
 
 interface RepartiComparisonProps {
   filteredResponses: Response[];
+  availableCompanies: { id: string; name: string }[];
+  availableSites: { id: string; name: string; companyId: string }[];
 }
 
-const RepartiComparison = ({ filteredResponses }: RepartiComparisonProps) => {
-  const responses = filteredResponses;
+const RepartiComparison = ({
+  filteredResponses,
+  availableCompanies,
+  availableSites,
+}: RepartiComparisonProps) => {
+  const [selectedCompany, setSelectedCompany] = useState<string>("all");
+  const [selectedSite, setSelectedSite] = useState<string>("all");
 
-  const reparti = useMemo(() => Array.from(new Set(responses.map(r => String(r.answers?.meta_reparto)).filter(n => n && n !== 'undefined' && n !== 'null'))).sort(), [responses]);
+  // Filtra le risposte in base ai filtri selezionati
+  const displayedResponses = useMemo(() => {
+    let filtered = filteredResponses;
+
+    if (selectedCompany !== "all") {
+      filtered = filtered.filter((r) => r.companyId === selectedCompany);
+    }
+
+    if (selectedSite !== "all") {
+      filtered = filtered.filter((r) => r.siteId === selectedSite);
+    }
+
+    return filtered;
+  }, [filteredResponses, selectedCompany, selectedSite]);
+
+  // Filtra le sedi disponibili in base all'azienda selezionata
+  const filteredSites = useMemo(() => {
+    if (selectedCompany === "all") return [];
+    return availableSites.filter((s) => s.companyId === selectedCompany);
+  }, [availableSites, selectedCompany]);
+
+  const reparti = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          displayedResponses
+            .map((r) => String(r.answers?.meta_reparto || "Sconosciuto"))
+            .filter(Boolean)
+        )
+      ).sort(),
+    [displayedResponses]
+  );
 
   const chartsData = useMemo(() => {
-    return questions.map(q => {
+    return questions.map((q) => {
       const buckets = new Set<string>();
 
       // raccogliere tutte le risposte date a questa domanda
-      responses.forEach(r => {
+      displayedResponses.forEach((r) => {
         const val = r.answers?.[q.id];
         if (val === undefined || val === null) return;
 
         const vals = Array.isArray(val) ? val : [val];
-        vals.forEach(v => buckets.add(String(v)));
+        vals.forEach((v) => buckets.add(String(v)));
       });
 
       // se la domanda ha opzioni predefinite, usarle tutte
-      if (q.options) q.options.forEach(opt => buckets.add(opt));
+      if (q.options) q.options.forEach((opt) => buckets.add(opt));
 
-      const data = Array.from(buckets).map(bucket => {
+      const data = Array.from(buckets).map((bucket) => {
         const row: any = { risposta: bucket };
-        reparti.forEach(rep => {
-          const count = responses.filter(r => {
+        reparti.forEach((rep) => {
+          const count = displayedResponses.filter((r) => {
             if (String(r.answers?.meta_reparto) !== String(rep)) return false;
             const val = r.answers?.[q.id];
             if (val === undefined || val === null) return false;
@@ -149,39 +187,114 @@ const RepartiComparison = ({ filteredResponses }: RepartiComparisonProps) => {
 
       return { domanda: q.question, data };
     });
-  }, [responses, reparti]);
+  }, [displayedResponses, reparti]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5">
+    <div className="space-y-8">
+      {/* Filtri per azienda e sede */}
+      {(availableCompanies.length > 0 || filteredSites.length > 0) && (
+        <Card className="shadow-md">
+          <CardHeader className="bg-muted/50">
+            <CardTitle className="text-lg">Filtri Confronto</CardTitle>
+            <CardDescription>
+              Seleziona azienda e sede per confrontare i reparti
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex flex-wrap gap-4">
+              {availableCompanies.length > 0 && (
+                <div className="flex flex-col gap-2 min-w-[200px]">
+                  <label className="text-sm font-medium">Azienda</label>
+                  <select
+                    value={selectedCompany}
+                    onChange={(e) => {
+                      setSelectedCompany(e.target.value);
+                      setSelectedSite("all");
+                    }}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">Tutte le aziende</option>
+                    {availableCompanies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {filteredSites.length > 0 && (
+                <div className="flex flex-col gap-2 min-w-[200px]">
+                  <label className="text-sm font-medium">Sede</label>
+                  <select
+                    value={selectedSite}
+                    onChange={(e) => setSelectedSite(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">Tutte le sedi</option>
+                    {filteredSites.map((site) => (
+                      <option key={site.id} value={site.id}>
+                        {site.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {selectedCompany !== "all" && (
+              <div className="text-sm text-muted-foreground">
+                Confronto reparti per:{" "}
+                {availableCompanies.find((c) => c.id === selectedCompany)?.name}
+                {selectedSite !== "all" &&
+                  ` - ${filteredSites.find((s) => s.id === selectedSite)?.name}`}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5">
       <header className="border-b bg-card/80 backdrop-blur-md shadow-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <h1 className="text-xl font-bold leading-tight">Analisi Tra Reparti</h1>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-6">
-        {chartsData.map(q => (
-          <Card key={q.domanda} className="shadow-lg border-2">
-            <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b">
-              <CardTitle>{q.domanda}</CardTitle>
-              <CardDescription>Distribuzione delle risposte per reparto</CardDescription>
-            </CardHeader>
-            <CardContent style={{ height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={q.data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <XAxis dataKey="risposta" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  {reparti.map((rep, idx) => (
-                    <Bar key={rep} dataKey={rep} stackId="a" fill={COLORS[idx % COLORS.length]} />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        ))}
-      </main>
+        <main className="container mx-auto px-4 py-8 space-y-6">
+          {chartsData.map((q) => (
+            <Card key={q.domanda} className="shadow-lg border-2">
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b">
+                <CardTitle>{q.domanda}</CardTitle>
+                <CardDescription>
+                  Distribuzione delle risposte per reparto
+                </CardDescription>
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={q.data}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <XAxis dataKey="risposta" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    {reparti.map((rep, idx) => (
+                      <Bar
+                        key={rep}
+                        dataKey={rep}
+                        stackId="a"
+                        fill={COLORS[idx % COLORS.length]}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          ))}
+        </main>
+      </div>
     </div>
   );
 };

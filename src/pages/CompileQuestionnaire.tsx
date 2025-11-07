@@ -431,9 +431,9 @@ useEffect(() => {
 
 
   const checkAndLoadCompanyData = async () => {
-    if (userProfile?.companyId && userProfile?.siteIds?.length === 1) {
+    if (userProfile?.companyIds && userProfile.companyIds.length === 1 && userProfile?.siteIds?.length === 1) {
       // Assegnazione unica → imposta direttamente
-      const companyId = userProfile.companyId;
+      const companyId = userProfile.companyIds[0];
       const siteId = userProfile.siteIds[0];
       setSelectedCompanyId(companyId);
       setSelectedSiteId(siteId);
@@ -452,16 +452,13 @@ useEffect(() => {
       let companiesData: Company[] = [];
       let sitesData: CompanySite[] = [];
 
-      if (userProfile.companyId) {
-        const companyDoc = await getDoc(
-          doc(db, "companies", userProfile.companyId)
-        );
-        if (companyDoc.exists()) {
-          companiesData.push({
-            id: companyDoc.id,
-            ...companyDoc.data(),
-          } as Company);
-        }
+      if (userProfile.companyIds && userProfile.companyIds.length > 0) {
+        const companiesSnap = await getDocs(collection(db, "companies"));
+        const allCompanies = companiesSnap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        })) as Company[];
+        companiesData = allCompanies.filter((c) => userProfile.companyIds!.includes(c.id));
       }
 
       if (userProfile.siteIds && userProfile.siteIds.length > 0) {
@@ -470,14 +467,15 @@ useEffect(() => {
           id: d.id,
           ...d.data(),
         })) as CompanySite[];
-        sitesData = allSites.filter((s) => userProfile.siteIds.includes(s.id));
-      } else if (userProfile.companyId) {
-        // fallback: tutte le sedi di quell'azienda
-        const qSites = query(
-          collection(db, "companySites"),
-          where("companyId", "==", userProfile.companyId)
-        );
-        const sitesSnap = await getDocs(qSites);
+        sitesData = allSites.filter((s) => userProfile.siteIds!.includes(s.id));
+      } else if (userProfile.companyIds && userProfile.companyIds.length > 0) {
+        // fallback: tutte le sedi di quelle aziende
+        const sitesSnap = await getDocs(collection(db, "companySites"));
+        const allSites = sitesSnap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        })) as CompanySite[];
+        sitesData = allSites.filter((s) => userProfile.companyIds!.includes(s.companyId));
         sitesData = sitesSnap.docs.map((d) => ({
           id: d.id,
           ...d.data(),
