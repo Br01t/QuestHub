@@ -16,19 +16,20 @@ import CompileQuestionnaire from "./pages/CompileQuestionnaire";
 import Guide from "./pages/Guide";
 import Analysis from "./pages/Analysis";
 import Admin from "./pages/Admin";
+import Footer from "./pages/Footer";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CookiePolicy from "./pages/CookiePolicy";
 import { Loader2 } from "lucide-react"; // opzionale per spinner
 import FinalReport from "./pages/FinalReport";
 
 const queryClient = new QueryClient();
 const base = import.meta.env.MODE === "production" ? "/questHub" : "/";
 
-// ✅ Componente per proteggere le route riservate
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  // Mostra loader durante l’inizializzazione dell’autenticazione
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -37,12 +38,10 @@ function RequireAuth({ children }: { children: JSX.Element }) {
     );
   }
 
-  // Se non è loggato → vai al login e salva la destinazione
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Se è loggato → mostra la pagina richiesta
   return children;
 }
 
@@ -98,6 +97,9 @@ const AppRoutes = () => (
     <Route path="/final-report" element={<FinalReport />} />
     {/* Not found */}
     <Route path="*" element={<NotFound />} />
+    {/* Legal */}
+    <Route path="/privacy" element={<PrivacyPolicy />} />
+    <Route path="/cookies" element={<CookiePolicy />} />
   </Routes>
 );
 
@@ -109,6 +111,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter basename={base}>
           <AppRoutes />
+          <Footer />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
