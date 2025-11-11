@@ -34,7 +34,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-2 md:mt-0 text-xs text-muted-foreground text-center md:text-right max-w-md">
-          (FAKE) I dati raccolti sono trattati in conformità al{" "}
+          (TODO) I dati raccolti sono trattati in conformità al{" "}
           <strong>GDPR (Reg. UE 2016/679)</strong> e alle policy aziendali ISO 27001/9001 per la sicurezza e la qualità dei dati.
         </div>
       </div>

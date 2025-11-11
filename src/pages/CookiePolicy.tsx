@@ -7,7 +7,7 @@ const CookiePolicy = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-6">Cookie Policy</h1>
+      <h1 className="text-3xl font-bold mb-6">Cookie Policy (TODO)</h1>
       <p className="mb-4">
         Questo sito utilizza cookie per garantire la migliore esperienza di navigazione, analizzare il traffico e personalizzare i contenuti.
       </p>

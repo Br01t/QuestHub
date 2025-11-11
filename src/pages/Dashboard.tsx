@@ -752,9 +752,9 @@ const Dashboard = () => {
                   <CardTitle className="text-xl">
                     Distibuzione Questionari attivi per Settore
                   </CardTitle>
-                  <CardDescription>
+                  {/* <CardDescription>
                     Valutazione complessiva su scala 0-100
-                  </CardDescription>
+                  </CardDescription> */}
                 </CardHeader>
                 <CardContent>
                   <div style={{ height: 260 }}>

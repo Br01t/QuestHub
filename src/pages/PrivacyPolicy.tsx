@@ -7,7 +7,7 @@ const PrivacyPolicy = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-6">Informativa Privacy</h1>
+      <h1 className="text-3xl font-bold mb-6">Informativa Privacy (TODO)</h1>
       <p className="mb-4">
         La presente Informativa Privacy descrive come raccogliamo, utilizziamo e proteggiamo i tuoi dati personali
         in conformità al Regolamento UE 2016/679 (GDPR) e alle linee guida ISO 27001.
