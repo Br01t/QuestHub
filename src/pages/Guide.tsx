@@ -46,41 +46,42 @@ const FEATURES = [
   },
   {
     icon: Settings,
-    title: "Gestione Sistema",
+    title: "Gestione Sistema (Admin)",
     items: [
-      "Creazione ed eliminazione di aziende e sedi (solo Admin)",
+      "Creazione ed eliminazione di aziende e sedi",
       "Assegnazione di aziende e sedi agli utenti",
-      "Gestione autorità admin",
-      "Controllo accessi basato su ruoli"
-    ]
-  },
-  {
-    icon: BarChart3,
-    title: "Analisi e Report",
-    items: [
-      "Analisi per singolo lavoratore con report PDF confronto temporale",
-      "Relazione finale PDF personalizzabile (intestazione, corpo, conclusioni)",
-      "Analisi per reparto (user: solo sedi assegnate)",
-      "Confronto tra reparti (in sviluppo separazione per azienda)",
-      "Grafici aggiornati in tempo reale per azienda/sede selezionata"
+      "Gestione assegnazione autorizzazione admin",
     ]
   },
   {
     icon: Shield,
     title: "Controllo Accessi",
     items: [
-      "User: accesso solo ai dati di aziende/sedi assegnate",
+      "Controllo accessi generale basato su ruoli",
+      "User: consentito solamente compilare e visualizzare dati di aziende/sedi assegnate",
       "Admin: accesso completo a tutti i dati distinguibili per azienda/sede",
       "Filtri automatici basati sui permessi utente"
     ]
-  }
+  },
+  {
+    icon: BarChart3,
+    title: "Analisi e Report",
+    items: [
+      "Analisi per singolo lavoratore con report PDF e possibile confronto temporale",
+      "Relazione finale PDF personalizzabile (intestazione, corpo, conclusioni)",
+      "Analisi per reparto",
+      "Analisi per sede",
+      "Analisi per azienda",
+      "Confronto tra reparti (in sviluppo distinzione per azienda)",
+      "Grafici aggiornati in tempo reale per azienda/sede selezionata"
+    ]
+  },
 ];
 
 const WIP_ITEMS = [
   "Filtri azienda/sede nelle analisi da perfezionare",
   "Separazione completa dei reparti per azienda",
   "Gestione avanzata grafici per confronto reparti",
-  "Pulizia e normalizzazione dei dati demo",
   "Ottimizzazione stile mobile",
   "Possibili aggiunte: creazione questionari personalizzati da admin + varie funzionalità extra"
 ];
@@ -193,8 +194,8 @@ const Guide = () => {
           </CardHeader>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground mb-4">
-              Alcuni dati presenti sono <span className="font-semibold">parziali o di test</span>, inseriti durante lo sviluppo 
-              per verificare le funzionalità. Verranno ripuliti e normalizzati nelle versioni future, ma consentono già di testare:
+              I dati presenti sono <span className="font-semibold">fittizzi e casuali</span>, inseriti durante lo sviluppo 
+              per verificare le funzionalità, ma consentono già di testare:
             </p>
             <ul className="space-y-2">
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -203,11 +204,7 @@ const Guide = () => {
               </li>
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                <span>Confronto tra risposte singole nel tempo</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                <span>Confronto tra reparti (visualizzazione finale, da sistemare separazione per azienda)</span>
+                <span>Confronto vari tra risposte con grafici</span>
               </li>
             </ul>
           </CardContent>
