@@ -245,66 +245,95 @@ export default function SiteAnalysis({
   };
 
   const generatePDF = () => {
-    if (selectedSite === "all" || responsesBySite.length === 0) return;
+  if (selectedSite === "all" || responsesBySite.length === 0) return;
 
-    const siteName =
-      allSites.find((s) => s.id === selectedSite)?.name || selectedSite;
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-    const marginLeft = 14;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const marginLeft = 14;
+  doc.setFontSize(16);
+  doc.text(`Report Site: ${selectedSite}`, marginLeft, 20);
 
-    doc.setFontSize(16);
-    doc.text(`Report sede: ${siteName}`, marginLeft, 20);
-    doc.setFontSize(11);
-    doc.text(`Date compilazioni: ${dates.join(", ")}`, marginLeft, 28);
+  const dates = responsesBySite
+    .map((r) => r.createdAt?.toDate?.() ?? r.createdAt)
+    .filter(Boolean)
+    .map((d) => format(d as Date, "dd/MM/yyyy HH:mm"));
 
-    const body: string[][] = [];
-    let currentSection = "";
+  doc.setFontSize(11);
+  doc.text(`Date compilazioni: ${dates.join(", ")}`, marginLeft, 28);
 
-    FULL_QUESTIONS.forEach((q) => {
-      const sectionTitle = Object.entries(SECTION_TITLES).find(
-        ([id]) => q.id === id
-      )?.[1];
-      if (sectionTitle && sectionTitle !== currentSection) {
-        currentSection = sectionTitle;
-        body.push([sectionTitle, ...Array(workers.length).fill("")]);
+  const body: any[] = [];
+  let currentSection = "";
+
+  FULL_QUESTIONS.forEach((q) => {
+    const sectionTitle = SECTION_TITLES[q.id];
+    if (sectionTitle && sectionTitle !== currentSection) {
+      currentSection = sectionTitle;
+      // Riga sezione con sfondo grigio e testo bold maiuscolo
+      body.push([
+        {
+          content: currentSection.toUpperCase(),
+          colSpan: workers.length + 1,
+          styles: {
+            fillColor: [229, 231, 235], // grigio chiaro come bg-gray-200
+            fontStyle: "bold",
+            halign: "left",
+          },
+        },
+      ]);
+    }
+
+    const answers = responsesBySite.map((r) => {
+      const val = r.answers?.[q.id];
+      if (
+        q.id === "foto_postazione" &&
+        typeof val === "string" &&
+        val.startsWith("data:image")
+      ) {
+        return "—"; // Ignora immagini
       }
-
-      const answers = responsesBySite.map((r) =>
-        renderAnswer(r.answers?.[q.id])
-      );
-      if (answers.every((a) => a === "—")) return;
-      body.push([q.label, ...answers]);
+      return renderAnswer(val);
     });
 
-    autoTable(doc, {
-      startY: 35,
-      head: [["Domanda", ...workers]],
-      body,
-      theme: "striped",
-      styles: { fontSize: 8, cellPadding: 2 },
-      didParseCell: (data) => {
-        if (body[data.row.index]?.[0] === currentSection) {
-          data.cell.styles.fillColor = [230, 230, 230];
-          data.cell.styles.fontStyle = "bold";
-        }
-      },
-    });
+    if (answers.every((a) => a === "—")) return;
 
-    doc.setFontSize(8);
-    doc.text(
-      `Generato il ${format(new Date(), "dd/MM/yyyy HH:mm")}`,
-      marginLeft,
-      290
-    );
+    // Riga domanda + risposte lavoratori
+    body.push([
+      { content: q.label, styles: { fontStyle: "bold", halign: "left" } },
+      ...answers.map((a) => ({ content: a, styles: { halign: "center" } })),
+    ]);
+  });
 
-    doc.save(
-      `report_sede_${siteName}_${new Date().toISOString().slice(0, 10)}.pdf`
-    );
-  };
+  autoTable(doc, {
+    startY: 35,
+    head: [["Domanda", ...workers]],
+    body,
+    theme: "striped",
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      valign: "middle",
+      halign: "center",
+    },
+    didParseCell: (data) => {
+      // Riga sezione con colSpan
+      if (data.cell.raw?.colSpan) {
+        data.cell.styles.fillColor = [229, 231, 235];
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
+  });
+
+  doc.setFontSize(8);
+  doc.text(
+    `Generato il ${format(new Date(), "dd/MM/yyyy HH:mm")}`,
+    marginLeft,
+    290
+  );
+
+  doc.save(
+    `report_reparto_${selectedSite}_${new Date().toISOString().slice(0, 10)}.pdf`
+  );
+};
+
 
   return (
     <div className="space-y-6">

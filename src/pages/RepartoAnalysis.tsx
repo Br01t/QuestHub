@@ -342,7 +342,6 @@ export default function RepartoAnalysis({
     return str;
   };
 
-  // 🔹 PDF generation aligned with WorkerAnalysis style
   const generatePDF = () => {
     if (selectedReparto === "all" || responsesByReparto.length === 0) return;
 
@@ -351,31 +350,57 @@ export default function RepartoAnalysis({
       unit: "mm",
       format: "a4",
     });
-    const marginLeft = 14;
 
+    const marginLeft = 14;
     doc.setFontSize(16);
     doc.text(`Report reparto: ${selectedReparto}`, marginLeft, 20);
+
+    const dates = responsesByReparto
+      .map((r) => r.createdAt?.toDate?.() ?? r.createdAt)
+      .filter(Boolean)
+      .map((d) => format(d as Date, "dd/MM/yyyy"));
+
     doc.setFontSize(11);
     doc.text(`Date compilazioni: ${dates.join(", ")}`, marginLeft, 28);
 
-    const body: string[][] = [];
+    const body: any[] = [];
     let currentSection = "";
 
     FULL_QUESTIONS.forEach((q) => {
-      const sectionTitle = Object.entries(SECTION_TITLES).find(
-        ([id]) => q.id === id
-      )?.[1];
+      const sectionTitle = SECTION_TITLES[q.id];
       if (sectionTitle && sectionTitle !== currentSection) {
         currentSection = sectionTitle;
-        body.push([sectionTitle, ...Array(workers.length).fill("")]);
+        body.push([
+          {
+            content: currentSection,
+            colSpan: workers.length + 1,
+            styles: {
+              fillColor: [230, 230, 230],
+              fontStyle: "bold",
+              halign: "left",
+            },
+          },
+        ]);
       }
 
-      const answers = responsesByReparto.map((r) =>
-        renderAnswer(r.answers?.[q.id])
-      );
-      console.log("🔍 Domanda:", q.id, "=>", answers);
+      const answers = responsesByReparto.map((r) => {
+        const val = r.answers?.[q.id];
+        if (
+          q.id === "foto_postazione" &&
+          typeof val === "string" &&
+          val.startsWith("data:image")
+        ) {
+          return { content: "", styles: {} }; // Placeholder: jspdf-autotable non gestisce direttamente immagini base64, vedi sotto
+        }
+        return renderAnswer(val);
+      });
+
       if (answers.every((a) => a === "—")) return;
-      body.push([q.label, ...answers]);
+
+      body.push([
+        { content: q.label, styles: { fontStyle: "bold", halign: "left" } },
+        ...answers,
+      ]);
     });
 
     autoTable(doc, {
@@ -383,15 +408,22 @@ export default function RepartoAnalysis({
       head: [["Domanda", ...workers]],
       body,
       theme: "striped",
-      styles: { fontSize: 8, cellPadding: 2 },
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        valign: "middle",
+        halign: "center",
+      },
       didParseCell: (data) => {
-        if (body[data.row.index][0] === currentSection) {
+        // Righe sezione con background grigio
+        if (data.cell.raw?.colSpan) {
           data.cell.styles.fillColor = [230, 230, 230];
           data.cell.styles.fontStyle = "bold";
         }
       },
     });
 
+    // Footer con data generazione
     doc.setFontSize(8);
     doc.text(
       `Generato il ${format(new Date(), "dd/MM/yyyy HH:mm")}`,

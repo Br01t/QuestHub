@@ -204,68 +204,99 @@ export default function CompanyAnalysis({
   };
 
   const generatePDF = () => {
-    if (selectedCompany === "all" || responsesByCompany.length === 0) return;
+  if (selectedCompany === "all" || responsesByCompany.length === 0) return;
 
-    const companyName =
-      companies.find((c) => c.id === selectedCompany)?.name || selectedCompany;
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-    const marginLeft = 14;
+  const companyName =
+    companies.find((c) => c.id === selectedCompany)?.name || selectedCompany;
 
-    doc.setFontSize(16);
-    doc.text(`Report azienda: ${companyName}`, marginLeft, 20);
-    doc.setFontSize(11);
-    doc.text(`Date compilazioni: ${dates.join(", ")}`, marginLeft, 28);
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const marginLeft = 14;
 
-    const body: string[][] = [];
-    let currentSection = "";
+  doc.setFontSize(16);
+  doc.text(`Report azienda: ${companyName}`, marginLeft, 20);
 
-    FULL_QUESTIONS.forEach((q) => {
-      const sectionTitle = Object.entries(SECTION_TITLES).find(
-        ([id]) => q.id === id
-      )?.[1];
-      if (sectionTitle && sectionTitle !== currentSection) {
-        currentSection = sectionTitle;
-        body.push([sectionTitle, ...Array(workers.length).fill("")]);
+  const dates = responsesByCompany
+    .map((r) =>
+      r.createdAt?.toDate ? format(r.createdAt.toDate(), "dd/MM/yyyy HH:mm") : "N/D"
+    )
+    .filter(Boolean);
+
+  doc.setFontSize(11);
+  doc.text(`Date compilazioni: ${dates.join(", ")}`, marginLeft, 28);
+
+  const body: any[] = [];
+  let currentSection = "";
+
+  FULL_QUESTIONS.forEach((q) => {
+    const sectionTitle = Object.entries(SECTION_TITLES).find(
+      ([id]) => q.id === id
+    )?.[1];
+
+    // Riga sezione con sfondo grigio e testo maiuscolo
+    if (sectionTitle && sectionTitle !== currentSection) {
+      currentSection = sectionTitle;
+      body.push([
+        {
+          content: currentSection.toUpperCase(),
+          colSpan: workers.length + 1,
+          styles: {
+            fillColor: [229, 231, 235], // grigio chiaro come bg-gray-200
+            fontStyle: "bold",
+            halign: "left",
+          },
+        },
+      ]);
+    }
+
+    const answers = responsesByCompany.map((r) => {
+      const val = r.answers?.[q.id];
+      if (q.id === "foto_postazione" && typeof val === "string") {
+        return "—"; // Ignora immagini per ora
       }
-
-      const answers = responsesByCompany.map((r) =>
-        renderAnswer(r.answers?.[q.id])
-      );
-      if (answers.every((a) => a === "—")) return;
-      body.push([q.label, ...answers]);
+      return renderAnswer(val);
     });
 
-    autoTable(doc, {
-      startY: 35,
-      head: [["Domanda", ...workers]],
-      body,
-      theme: "striped",
-      styles: { fontSize: 8, cellPadding: 2 },
-      didParseCell: (data) => {
-        if (body[data.row.index]?.[0] === currentSection) {
-          data.cell.styles.fillColor = [230, 230, 230];
-          data.cell.styles.fontStyle = "bold";
-        }
-      },
-    });
+    if (answers.every((a) => a === "—")) return;
 
-    doc.setFontSize(8);
-    doc.text(
-      `Generato il ${format(new Date(), "dd/MM/yyyy HH:mm")}`,
-      marginLeft,
-      290
-    );
+    body.push([
+      { content: q.label, styles: { fontStyle: "bold", halign: "left" } },
+      ...answers.map((a) => ({ content: a, styles: { halign: "center" } })),
+    ]);
+  });
 
-    doc.save(
-      `report_azienda_${companyName}_${new Date()
-        .toISOString()
-        .slice(0, 10)}.pdf`
-    );
-  };
+  autoTable(doc, {
+    startY: 35,
+    head: [["Domanda", ...workers]],
+    body,
+    theme: "striped",
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      valign: "middle",
+      halign: "center",
+    },
+    didParseCell: (data) => {
+      // Gestione righe sezione
+      if (data.cell.raw?.colSpan) {
+        data.cell.styles.fillColor = [229, 231, 235];
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.halign = "left";
+      }
+    },
+  });
+
+  doc.setFontSize(8);
+  doc.text(
+    `Generato il ${format(new Date(), "dd/MM/yyyy HH:mm")}`,
+    marginLeft,
+    290
+  );
+
+  doc.save(
+    `report_azienda_${companyName}_${new Date().toISOString().slice(0, 10)}.pdf`
+  );
+};
+
 
   return (
     <div className="space-y-6">
