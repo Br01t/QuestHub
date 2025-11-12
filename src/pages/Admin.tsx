@@ -122,7 +122,11 @@ const Admin = () => {
 
       // Load users
       const usersSnap = await getDocs(collection(db, "userProfiles"));
-      setUsers(usersSnap.docs.map((doc) => ({         userId: doc.id, ...doc.data() } as UserProfile)));
+      setUsers(
+        usersSnap.docs.map(
+          (doc) => ({ userId: doc.id, ...doc.data() } as UserProfile)
+        )
+      );
     } catch (error) {
       console.error("Errore caricamento dati:", error);
       toast({
@@ -131,6 +135,15 @@ const Admin = () => {
         description: "Impossibile caricare i dati",
       });
     }
+  };
+
+  const getCompanyColor = (companyId: string) => {
+    let hash = 0;
+    for (let i = 0; i < companyId.length; i++) {
+      hash = companyId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 65%, 50%)`;
   };
 
   const createCompany = async () => {
@@ -544,7 +557,12 @@ const Admin = () => {
                                   {site.address}
                                 </p>
                                 <Badge
-                                  variant="secondary"
+                                  style={{
+                                    backgroundColor: getCompanyColor(
+                                      site.companyId
+                                    ),
+                                    color: "white",
+                                  }}
                                   className="mt-1 text-xs"
                                 >
                                   {company?.name || "Azienda non trovata"}
